@@ -32,18 +32,38 @@ func TestInit(t *testing.T) {
 		t.Errorf("Expected dev category description to be 'Development tools and utilities', got '%s'", devCategory.Description)
 	}
 
-	// Check if the UUIDv4 action is registered
-	if len(devCategory.Actions) != 1 {
-		t.Fatalf("Expected 1 action in dev category, got %d", len(devCategory.Actions))
+	// Check if both UUIDv4 and UUIDv7 actions are registered
+	if len(devCategory.Actions) != 2 {
+		t.Fatalf("Expected 2 actions in dev category, got %d", len(devCategory.Actions))
 	}
 
-	uuidv4Action := devCategory.Actions[0]
-	if uuidv4Action.ID != "uuidv4" {
-		t.Errorf("Expected action ID to be 'uuidv4', got '%s'", uuidv4Action.ID)
+	// Verify UUIDv4 action
+	var uuidv4Action *actions.Action
+	var uuidv7Action *actions.Action
+
+	for _, action := range devCategory.Actions {
+		if action.ID == "uuidv4" {
+			uuidv4Action = action
+		} else if action.ID == "uuidv7" {
+			uuidv7Action = action
+		}
+	}
+
+	if uuidv4Action == nil {
+		t.Fatal("UUIDv4 action not found in dev category")
 	}
 
 	if uuidv4Action.Name != "Generate UUIDv4" {
-		t.Errorf("Expected action name to be 'Generate UUIDv4', got '%s'", uuidv4Action.Name)
+		t.Errorf("Expected UUIDv4 action name to be 'Generate UUIDv4', got '%s'", uuidv4Action.Name)
+	}
+
+	// Verify UUIDv7 action
+	if uuidv7Action == nil {
+		t.Fatal("UUIDv7 action not found in dev category")
+	}
+
+	if uuidv7Action.Name != "Generate UUIDv7" {
+		t.Errorf("Expected UUIDv7 action name to be 'Generate UUIDv7', got '%s'", uuidv7Action.Name)
 	}
 }
 
