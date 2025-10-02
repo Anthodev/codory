@@ -7,6 +7,7 @@ import (
 
 	"anthodev/codory/internal/actions"
 
+	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -14,6 +15,7 @@ type state int
 
 const (
 	stateMenu state = iota
+	stateInput
 	stateExecuting
 	stateResult
 	statePackageManagerPrompt
@@ -39,8 +41,20 @@ type Model struct {
 	packageManagerType  actions.PackageSource
 	pendingAction       *actions.Action
 
+	// Input handling
+	inputFields   []InputField
+	currentInput  int
+	textInput     textinput.Model
+	collectedArgs []string
+
 	width  int
 	height int
+}
+
+type InputField struct {
+	Name        string
+	Description string
+	Required    bool
 }
 
 func NewModel() Model {
@@ -73,6 +87,17 @@ func executeAction(action *actions.Action, executor *actions.Executor) tea.Cmd {
 	}
 }
 
+func executeActionWithArgs(action *actions.Action, executor *actions.Executor, args []string) tea.Cmd {
+	return func() tea.Msg {
+		// Store args in context using your custom key
+		ctx := context.WithValue(context.Background(), actions.ArgsContextKey, args)
+
+		// Execute with the context containing the args
+		result, err := executor.Execute(ctx, action)
+		return actionCompleteMsg{result: result, err: err}
+	}
+}
+
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
@@ -84,6 +109,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch m.state {
 		case stateMenu:
 			return m.updateMenu(msg)
+		case stateInput:
+			return m.updateInput(msg)
 		case stateResult:
 			return m.updateResult(msg)
 		}
@@ -162,6 +189,23 @@ func (m Model) selectItem() (tea.Model, tea.Cmd) {
 	if actionIndex < len(visibleActions) {
 		action := visibleActions[actionIndex]
 
+		if len(action.Arguments) > 0 {
+			// Initialize input state
+			m.executingAction = action
+			m.state = stateInput
+			m.currentInput = 0
+			m.collectedArgs = make([]string, 0, len(action.Arguments))
+
+			// Initialize text input
+			ti := textinput.New()
+			ti.Placeholder = action.Arguments[0].Description
+			ti.Focus()
+			ti.CharLimit = 36
+			m.textInput = ti
+
+			return m, nil
+		}
+
 		m.executingAction = action
 		m.state = stateExecuting
 		return m, executeAction(action, m.executor)
@@ -183,6 +227,43 @@ func (m Model) goBack() (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+func (m Model) updateInput(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
+
+	switch msg.String() {
+	case "ctrl+c", "q":
+		return m, tea.Quit
+
+	case "esc":
+		// Cancel and go back to menu
+		m.state = stateMenu
+		m.executingAction = nil
+		m.collectedArgs = nil
+		return m, nil
+
+	case "enter":
+		// Save current input
+		m.collectedArgs = append(m.collectedArgs, m.textInput.Value())
+		m.currentInput++
+
+		// Check if we have all arguments
+		if m.currentInput >= len(m.executingAction.Arguments) {
+			// Execute the action with collected args
+			m.state = stateExecuting
+			return m, executeActionWithArgs(m.executingAction, m.executor, m.collectedArgs)
+		}
+
+		// Move to next argument
+		m.textInput.SetValue("")
+		m.textInput.Placeholder = m.executingAction.Arguments[m.currentInput].Description
+		return m, nil
+	}
+
+	// Update text input
+	m.textInput, cmd = m.textInput.Update(msg)
+	return m, cmd
+}
+
 func (m Model) updateResult(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
 	case "ctrl+c", "q":
@@ -198,15 +279,25 @@ func (m Model) updateResult(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 }
 
 func (m Model) View() string {
+	var content string
+
 	switch m.state {
 	case stateMenu:
-		return m.viewMenu()
+		content = m.viewMenu()
+	case stateInput:
+		content = m.viewInput()
 	case stateExecuting:
-		return m.viewExecuting()
+		content = m.viewExecuting()
 	case stateResult:
-		return m.viewResult()
+		content = m.viewResult()
+	default:
+		content = ""
 	}
-	return ""
+
+	return appStyle.
+		Width(m.width - 3).
+		Height(m.height - 3).
+		Render(content)
 }
 
 func (m Model) viewMenu() string {
@@ -274,6 +365,25 @@ func (m Model) viewMenu() string {
 	// Help
 	s.WriteString("\n")
 	s.WriteString(helpStyle.Render("↑/↓: navigate • enter: select • esc: back • q: quit"))
+
+	return s.String()
+}
+
+func (m Model) viewInput() string {
+	var s strings.Builder
+
+	s.WriteString("\n")
+	s.WriteString(titleStyle.Render(m.executingAction.Name))
+	s.WriteString("\n\n")
+
+	arg := m.executingAction.Arguments[m.currentInput]
+	s.WriteString(fmt.Sprintf("Enter %s:\n", arg.Name))
+	s.WriteString(fmt.Sprintf("%s\n\n", arg.Description))
+
+	s.WriteString(inputStyle.Render(m.textInput.View()))
+	s.WriteString("\n\n")
+
+	s.WriteString(helpStyle.Render("enter: confirm • esc: cancel"))
 
 	return s.String()
 }

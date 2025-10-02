@@ -3,6 +3,12 @@ package ui
 import "github.com/charmbracelet/lipgloss"
 
 var (
+	appStyle = lipgloss.NewStyle().
+			BorderForeground(lipgloss.Color("#7D56F4")).
+			BorderStyle(lipgloss.RoundedBorder()).
+			Padding(1).
+			Margin(1)
+
 	titleStyle = lipgloss.NewStyle().
 			Bold(true).
 			Foreground(lipgloss.Color("#7D56F4")).
@@ -48,4 +54,9 @@ var (
 	platformStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#626262")).
 			Italic(true)
+
+	inputStyle = lipgloss.NewStyle().
+			BorderForeground(lipgloss.Color("#3C91E6")).
+			BorderStyle(lipgloss.NormalBorder()).
+			Padding(1).Width(80)
 )
