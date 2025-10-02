@@ -15,6 +15,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install clipboard utilities
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xclip xsel wl-clipboard xvfb
+
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
@@ -32,10 +37,10 @@ jobs:
         run: go mod download
 
       - name: Run tests
-        run: go test -v ./...
+        run: xvfb-run -a go test -v ./...
 
       - name: Run tests with coverage
-        run: go test -v -coverprofile=coverage.out ./...
+        run: xvfb-run -a go test -v -coverprofile=coverage.out ./...
 
       - name: Display coverage
         run: go tool cover -func=coverage.out
@@ -46,4 +51,4 @@ jobs:
           file: ./coverage.out
           flags: unittests
           name: codecov-umbrella
-        if: matrix.go-version == '1.25'
+          if: matrix.go-version == '1.25'
