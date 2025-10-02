@@ -48,12 +48,19 @@ type Action struct {
 	Description string
 	Type        ActionType
 	Handler     ActionHandler
+	Arguments   []ActionArgument
 
 	// For system commands (new structure)
 	PlatformCommands map[Platform]PlatformCommand
 
 	// Platforms where the action is hidden
 	HiddenOnPlatforms []Platform
+}
+
+type ActionArgument struct {
+	Name        string
+	Description string
+	Required    bool
 }
 
 // ActionHandler is a function that executes an action
