@@ -14,6 +14,7 @@ type Executor struct {
 	platformInfo platform.Info
 }
 
+
 // NewExecutor creates a new executor
 func NewExecutor() *Executor {
 	return &Executor{
@@ -43,7 +44,7 @@ func (e *Executor) executeCommand(ctx context.Context, action *Action) (string, 
 	platformCmd, found := action.GetPlatformCommand(Platform(e.platformInfo.OS))
 	if !found {
 		if !found {
-			// Essayer avec PlatformAny
+			// Try with PlatformAny
 			platformCmd, found = action.GetPlatformCommand(PlatformAny)
 			if !found {
 				return "", fmt.Errorf("no command defined for platform %s", e.platformInfo.OS)
