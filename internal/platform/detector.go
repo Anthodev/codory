@@ -40,6 +40,8 @@ func DetectInfo() Info {
 		PackageManagers: make([]PackageManager, 0),
 	}
 
+	info.PackageManagers = append(info.PackageManagers, PackageManagerNone)
+
 	return info
 }
 
