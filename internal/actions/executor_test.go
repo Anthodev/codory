@@ -7,7 +7,15 @@ import (
 	"anthodev/codory/internal/platform"
 )
 
-// Helper function to create platform info for testing
+// Mock platform info for testing
+func createMockPlatformInfo(os platform.Platform) platform.Info {
+	return platform.Info{
+		OS:              os,
+		PackageManagers: []platform.PackageManager{},
+	}
+}
+
+// Helper function to create test platform info
 func createTestPlatformInfo(os platform.Platform) platform.Info {
 	return platform.Info{
 		OS:              os,
@@ -186,4 +194,165 @@ func TestExecutor_GetPlatformInfo(t *testing.T) {
 // Helper function
 func contains(s, substr string) bool {
 	return len(s) >= len(substr) && (s == substr || len(s) > len(substr) && (s[:len(substr)] == substr || contains(s[1:], substr)))
+}
+
+func TestExecutor_checkPackageManagerDependency(t *testing.T) {
+	tests := []struct {
+		name        string
+		executor    *Executor
+		source      PackageSource
+		wantErr     bool
+		errContains string
+		skipFunc    func() bool
+	}{
+		{
+			name: "AUR on non-Arch platform",
+			executor: &Executor{
+				platformInfo: createMockPlatformInfo(platform.Debian),
+			},
+			source:      PackageSourceAUR,
+			wantErr:     true,
+			errContains: "AUR packages are only available on Arch Linux",
+		},
+		{
+			name: "AUR on Arch with yay installed",
+			executor: &Executor{
+				platformInfo: createMockPlatformInfo(platform.Arch),
+			},
+			source:  PackageSourceAUR,
+			wantErr: false,
+			skipFunc: func() bool {
+				// Skip this test case if yay is not actually installed on the system
+				return !platform.IsYayInstalled()
+			},
+		},
+		{
+			name: "official package source",
+			executor: &Executor{
+				platformInfo: createMockPlatformInfo(platform.Debian),
+			},
+			source:  PackageSourceOfficial,
+			wantErr: false,
+		},
+		{
+			name: "brew package source",
+			executor: &Executor{
+				platformInfo: createMockPlatformInfo(platform.MacOS),
+			},
+			source:  PackageSourceBrew,
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.skipFunc != nil && tt.skipFunc() {
+				t.Skip("Skipping test case based on skip function")
+			}
+			err := tt.executor.checkPackageManagerDependency(context.Background(), tt.source)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("Expected error but got none")
+				} else if tt.errContains != "" && !contains(err.Error(), tt.errContains) {
+					t.Errorf("Expected error to contain '%s', got '%s'", tt.errContains, err.Error())
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Unexpected error: %v", err)
+				}
+			}
+		})
+	}
+}
+
+func TestExecutor_NeedsPackageManagerInstallation(t *testing.T) {
+	tests := []struct {
+		name       string
+		executor   *Executor
+		action     *Action
+		wantNeeds  bool
+		wantSource PackageSource
+		skipFunc   func() bool
+	}{
+		{
+			name: "AUR action on Arch without yay",
+			executor: &Executor{
+				platformInfo: createMockPlatformInfo(platform.Arch),
+			},
+			action: &Action{
+				PlatformCommands: map[Platform]PlatformCommand{
+					PlatformArch: {
+						Command:       "yay -S package",
+						PackageSource: PackageSourceAUR,
+					},
+				},
+			},
+			wantNeeds:  true,
+			wantSource: PackageSourceAUR,
+			skipFunc: func() bool {
+				// Skip this test case if yay is actually installed on the system
+				return platform.IsYayInstalled()
+			},
+		},
+		{
+			name: "AUR action on non-Arch platform",
+			executor: &Executor{
+				platformInfo: createMockPlatformInfo(platform.Debian),
+			},
+			action: &Action{
+				PlatformCommands: map[Platform]PlatformCommand{
+					PlatformAny: {
+						Command:       "yay -S package",
+						PackageSource: PackageSourceAUR,
+					},
+				},
+			},
+			wantNeeds:  false,
+			wantSource: "",
+		},
+		{
+			name: "official package action",
+			executor: &Executor{
+				platformInfo: createMockPlatformInfo(platform.Debian),
+			},
+			action: &Action{
+				PlatformCommands: map[Platform]PlatformCommand{
+					PlatformDebian: {
+						Command:       "apt install package",
+						PackageSource: PackageSourceOfficial,
+					},
+				},
+			},
+			wantNeeds:  false,
+			wantSource: "",
+		},
+		{
+			name: "no platform command",
+			executor: &Executor{
+				platformInfo: createMockPlatformInfo(platform.Debian),
+			},
+			action: &Action{
+				PlatformCommands: map[Platform]PlatformCommand{},
+			},
+			wantNeeds:  false,
+			wantSource: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.skipFunc != nil && tt.skipFunc() {
+				t.Skip("Skipping test case based on skip function")
+			}
+			needs, source := tt.executor.NeedsPackageManagerInstallation(tt.action)
+
+			if needs != tt.wantNeeds {
+				t.Errorf("NeedsPackageManagerInstallation() needs = %v, want %v", needs, tt.wantNeeds)
+			}
+			if source != tt.wantSource {
+				t.Errorf("NeedsPackageManagerInstallation() source = %v, want %v", source, tt.wantSource)
+			}
+		})
+	}
 }

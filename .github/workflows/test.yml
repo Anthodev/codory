@@ -37,10 +37,16 @@ jobs:
         run: go mod download
 
       - name: Run tests
-        run: xvfb-run -a go test -v ./...
+        run: |
+          export CODORY_TEST=1
+          export GO_TEST=1
+          xvfb-run -a go test -v ./...
 
       - name: Run tests with coverage
-        run: xvfb-run -a go test -v -coverprofile=coverage.out ./...
+        run: |
+          export CODORY_TEST=1
+          export GO_TEST=1
+          xvfb-run -a go test -v -coverprofile=coverage.out ./...
 
       - name: Display coverage
         run: go tool cover -func=coverage.out

@@ -3,6 +3,7 @@ package platform
 import (
 	"os/exec"
 	"runtime"
+	"slices"
 )
 
 // Platform represents a system platform
@@ -112,6 +113,18 @@ func DetectInfo() Info {
 	}
 
 	return info
+}
+
+func (i Info) HasPackageManager(pm PackageManager) bool {
+	return slices.Contains(i.PackageManagers, pm)
+}
+
+func IsYayInstalled() bool {
+	return commandExists("yay")
+}
+
+func IsPacmanInstalled() bool {
+	return commandExists("pacman")
 }
 
 func fileExists(path string) bool {

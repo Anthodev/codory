@@ -1,24 +1,24 @@
 package actions
 
 import (
+	"anthodev/codory/internal/platform"
 	"context"
 	"fmt"
 	"os/exec"
 	"strings"
-
-	"anthodev/codory/internal/platform"
 )
 
 // Executor executes actions
 type Executor struct {
 	platformInfo platform.Info
+	yayInstaller *platform.YayInstaller
 }
-
 
 // NewExecutor creates a new executor
 func NewExecutor() *Executor {
 	return &Executor{
 		platformInfo: platform.DetectInfo(),
+		yayInstaller: platform.NewYayInstaller(nil),
 	}
 }
 
@@ -43,8 +43,12 @@ func (e *Executor) Execute(ctx context.Context, action *Action) (string, error) 
 func (e *Executor) executeCommand(ctx context.Context, action *Action) (string, error) {
 	platformCmd, found := action.GetPlatformCommand(Platform(e.platformInfo.OS))
 	if !found {
+		// Essayer avec le platform générique (Linux pour toutes les distros Linux)
+		if e.platformInfo.OS == platform.Debian || e.platformInfo.OS == platform.Arch {
+			platformCmd, found = action.GetPlatformCommand(PlatformLinux)
+		}
+
 		if !found {
-			// Try with PlatformAny
 			platformCmd, found = action.GetPlatformCommand(PlatformAny)
 			if !found {
 				return "", fmt.Errorf("no command defined for platform %s", e.platformInfo.OS)
@@ -52,7 +56,12 @@ func (e *Executor) executeCommand(ctx context.Context, action *Action) (string, 
 		}
 	}
 
-	// Execute the command
+	// Vérifier les dépendances de package manager
+	if err := e.checkPackageManagerDependency(ctx, platformCmd.PackageSource); err != nil {
+		return "", err
+	}
+
+	// Exécuter la commande
 	cmdStr := platformCmd.Command
 	parts := strings.Fields(cmdStr)
 	if len(parts) == 0 {
@@ -67,6 +76,41 @@ func (e *Executor) executeCommand(ctx context.Context, action *Action) (string, 
 	}
 
 	return string(output), nil
+}
+
+func (e *Executor) checkPackageManagerDependency(ctx context.Context, source PackageSource) error {
+	switch source {
+	case PackageSourceAUR:
+		if e.platformInfo.OS != platform.Arch {
+			return fmt.Errorf("AUR packages are only available on Arch Linux")
+		}
+		if !platform.IsYayInstalled() {
+			return fmt.Errorf("yay is not installed")
+		}
+	}
+
+	return nil
+}
+
+func (e *Executor) NeedsPackageManagerInstallation(action *Action) (bool, PackageSource) {
+	platformCmd, found := action.GetPlatformCommand(Platform(e.platformInfo.OS))
+	if !found {
+		if e.platformInfo.OS == platform.Debian || e.platformInfo.OS == platform.Arch {
+			platformCmd, found = action.GetPlatformCommand(PlatformLinux)
+		}
+		if !found {
+			return false, ""
+		}
+	}
+
+	switch platformCmd.PackageSource {
+	case PackageSourceAUR:
+		if e.platformInfo.OS == platform.Arch && !platform.IsYayInstalled() {
+			return true, PackageSourceAUR
+		}
+	}
+
+	return false, ""
 }
 
 // GetPlatformInfo returns the platform information
