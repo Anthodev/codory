@@ -8,19 +8,20 @@ import (
 func TestDetect(t *testing.T) {
 	got := Detect()
 
-	// Test that Detect returns a platform based on runtime.GOOS
+	// Test that Detect returns the correct platform based on runtime.GOOS
 	switch runtime.GOOS {
 	case "linux":
-		if got != Unknown {
-			t.Errorf("Detect() = %v, want %v for linux", got, Unknown)
+		// On Linux, we expect either Debian, Arch, or Unknown depending on the system
+		if got != Debian && got != Arch && got != Unknown {
+			t.Errorf("Detect() = %v, want one of %v, %v, or %v for linux", got, Debian, Arch, Unknown)
 		}
 	case "darwin":
-		if got != Unknown {
-			t.Errorf("Detect() = %v, want %v for darwin", got, Unknown)
+		if got != MacOS {
+			t.Errorf("Detect() = %v, want %v for darwin", got, MacOS)
 		}
 	case "windows":
-		if got != Unknown {
-			t.Errorf("Detect() = %v, want %v for windows", got, Unknown)
+		if got != Windows {
+			t.Errorf("Detect() = %v, want %v for windows", got, Windows)
 		}
 	default:
 		if got != Unknown {
@@ -48,6 +49,26 @@ func TestPlatform_String(t *testing.T) {
 		want     string
 	}{
 		{
+			name:     "debian platform",
+			platform: Debian,
+			want:     "debian",
+		},
+		{
+			name:     "arch platform",
+			platform: Arch,
+			want:     "arch",
+		},
+		{
+			name:     "macos platform",
+			platform: MacOS,
+			want:     "macos",
+		},
+		{
+			name:     "windows platform",
+			platform: Windows,
+			want:     "windows",
+		},
+		{
 			name:     "unknown platform",
 			platform: Unknown,
 			want:     "unknown",
@@ -74,6 +95,26 @@ func TestPlatform_DisplayName(t *testing.T) {
 		platform Platform
 		want     string
 	}{
+		{
+			name:     "debian platform",
+			platform: Debian,
+			want:     "Debian/Ubuntu",
+		},
+		{
+			name:     "arch platform",
+			platform: Arch,
+			want:     "Arch Linux",
+		},
+		{
+			name:     "macos platform",
+			platform: MacOS,
+			want:     "macOS",
+		},
+		{
+			name:     "windows platform",
+			platform: Windows,
+			want:     "Windows",
+		},
 		{
 			name:     "unknown platform",
 			platform: Unknown,
