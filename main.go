@@ -7,6 +7,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 
 	_ "anthodev/codory/internal/actions/dev"
+	_ "anthodev/codory/internal/actions/package_managers"
 	"anthodev/codory/internal/ui"
 )
 

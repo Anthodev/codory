@@ -5,7 +5,6 @@ import "anthodev/codory/internal/actions"
 func init() {
 	registry := actions.GlobalRegistry()
 
-	// Create the Dev category (visible on all platforms)
 	devCategory := &actions.Category{
 		ID:          "dev",
 		Name:        "Development",

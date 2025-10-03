@@ -158,10 +158,10 @@ func (m Model) updateMenu(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.cursor++
 		}
 
-	case "enter":
+	case "enter", "right":
 		return m.selectItem()
 
-	case "esc", "backspace":
+	case "esc", "backspace", "left":
 		return m.goBack()
 	}
 
@@ -364,7 +364,7 @@ func (m Model) viewMenu() string {
 
 	// Help
 	s.WriteString("\n")
-	s.WriteString(helpStyle.Render("↑/↓: navigate • enter: select • esc: back • q: quit"))
+	s.WriteString(helpStyle.Render("↑/↓: navigate • →/enter: select • ←/esc: back • q: quit"))
 
 	return s.String()
 }
@@ -412,7 +412,7 @@ func (m Model) viewResult() string {
 	}
 
 	s.WriteString("\n")
-	s.WriteString(helpStyle.Render("Press enter to continue..."))
+	s.WriteString(helpStyle.Render("Press enter to continue or q/ctrl+c to quit..."))
 
 	return s.String()
 }

@@ -53,7 +53,7 @@ type Action struct {
 	// For system commands (new structure)
 	PlatformCommands map[Platform]PlatformCommand
 
-	// Platforms where the action is hidden
+	VisibleOnPlatforms []Platform
 	HiddenOnPlatforms []Platform
 }
 
@@ -105,4 +105,21 @@ func (a *Action) GetPlatformCommand(platform Platform) (PlatformCommand, bool) {
 	}
 
 	return PlatformCommand{}, false
+}
+
+func (a *Action) HasCommandForPlatform(platform Platform) bool {
+	_, ok := a.GetPlatformCommand(platform)
+	if ok {
+		return true
+	}
+
+	if platform == PlatformDebian || platform == PlatformArch {
+		_, ok = a.GetPlatformCommand(PlatformLinux)
+		if ok {
+			return true
+		}
+	}
+
+	_, ok = a.GetPlatformCommand(PlatformAny)
+	return ok
 }

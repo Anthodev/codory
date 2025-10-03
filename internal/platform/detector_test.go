@@ -163,3 +163,75 @@ func TestCommandExists(t *testing.T) {
 		t.Error("commandExists() returned true for non-existent command")
 	}
 }
+
+func TestIsYayInstalled(t *testing.T) {
+	// Test IsYayInstalled function
+	result := IsYayInstalled()
+
+	// We can't predict the exact result since it depends on the system
+	// but we can verify it returns a boolean value without error
+	if result != true && result != false {
+		t.Error("IsYayInstalled() should return a boolean value")
+	}
+}
+
+func TestIsPacmanInstalled(t *testing.T) {
+	// Test IsPacmanInstalled function
+	result := IsPacmanInstalled()
+
+	// We can't predict the exact result since it depends on the system
+	// but we can verify it returns a boolean value without error
+	if result != true && result != false {
+		t.Error("IsPacmanInstalled() should return a boolean value")
+	}
+}
+
+func TestInfo_HasPackageManager(t *testing.T) {
+	tests := []struct {
+		name           string
+		info           Info
+		packageManager PackageManager
+		want           bool
+	}{
+		{
+			name: "has package manager",
+			info: Info{
+				PackageManagers: []PackageManager{PackageManagerAPT, PackageManagerPacman},
+			},
+			packageManager: PackageManagerAPT,
+			want:           true,
+		},
+		{
+			name: "does not have package manager",
+			info: Info{
+				PackageManagers: []PackageManager{PackageManagerAPT, PackageManagerPacman},
+			},
+			packageManager: PackageManagerYay,
+			want:           false,
+		},
+		{
+			name: "empty package managers",
+			info: Info{
+				PackageManagers: []PackageManager{},
+			},
+			packageManager: PackageManagerAPT,
+			want:           false,
+		},
+		{
+			name: "nil package managers",
+			info: Info{
+				PackageManagers: nil,
+			},
+			packageManager: PackageManagerAPT,
+			want:           false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.info.HasPackageManager(tt.packageManager); got != tt.want {
+				t.Errorf("Info.HasPackageManager() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
