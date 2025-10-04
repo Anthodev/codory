@@ -220,6 +220,12 @@ func TestBrewInstaller_Install(t *testing.T) {
 		t.Skip("Git not found on this system, skipping test")
 	}
 
+	// If brew is already installed, the validation will fail with "brew is already installed"
+	// before we get to the test mode check. This is expected behavior.
+	if IsBrewInstalled() {
+		t.Skip("Skipping Install test because brew is already installed")
+	}
+
 	testMode := func() bool { return true }
 	installer := NewBrewInstaller(testMode)
 

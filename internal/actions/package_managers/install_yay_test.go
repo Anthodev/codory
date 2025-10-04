@@ -59,35 +59,39 @@ func TestInstallYay_ValidationOnly(t *testing.T) {
 	defer os.Unsetenv("CODORY_TEST")
 
 	tests := []struct {
-		name         string
-		mockOS       platform.Platform
-		yayInstalled bool
-		wantErr      bool
-		errContains  string
-		wantResult   string
+		name          string
+		mockOS        platform.Platform
+		yayInstalled  bool
+		wantErr       bool
+		errContains   string
+		wantResult    string
+		skipCondition func() bool
 	}{
 		{
-			name:         "install on non-Arch platform",
-			mockOS:       platform.Debian,
-			yayInstalled: false,
-			wantErr:      true,
-			errContains:  "yay can only be installed on Arch Linux",
-			wantResult:   "",
+			name:          "install on non-Arch platform",
+			mockOS:        platform.Debian,
+			yayInstalled:  false,
+			wantErr:       true,
+			errContains:   "yay can only be installed on Arch Linux",
+			wantResult:    "",
+			skipCondition: nil,
 		},
 		{
-			name:         "yay already installed",
-			mockOS:       platform.Arch,
-			yayInstalled: true,
-			wantErr:      false,
-			wantResult:   "Yay is already installed!",
+			name:          "yay already installed",
+			mockOS:        platform.Arch,
+			yayInstalled:  true,
+			wantErr:       false,
+			wantResult:    "Yay is already installed!",
+			skipCondition: nil,
 		},
 		{
-			name:         "yay not installed - blocked in test environment",
-			mockOS:       platform.Arch,
-			yayInstalled: false,
-			wantErr:      true,
-			errContains:  "skipping yay installation in test environment",
-			wantResult:   "",
+			name:          "yay not installed - blocked in test environment",
+			mockOS:        platform.Arch,
+			yayInstalled:  false,
+			wantErr:       true,
+			errContains:   "skipping yay installation in test environment",
+			wantResult:    "",
+			skipCondition: nil,
 		},
 	}
 
@@ -101,6 +105,11 @@ func TestInstallYay_ValidationOnly(t *testing.T) {
 			// For the "yay already installed" test, skip if yay is not actually installed
 			if tt.name == "yay already installed" && !platform.IsYayInstalled() {
 				t.Skip("Skipping 'yay already installed' test because yay is not installed")
+			}
+
+			// Check skip condition if provided
+			if tt.skipCondition != nil && tt.skipCondition() {
+				t.Skipf("Skipping test case based on skip condition")
 			}
 
 			// For the "yay not installed" test, skip if yay is already installed
@@ -138,6 +147,12 @@ func TestInstallYay_ContextCancellation(t *testing.T) {
 	// This test only runs on Arch Linux to validate context cancellation
 	if platform.Detect() != platform.Arch {
 		t.Skip("Skipping context cancellation test on non-Arch system")
+	}
+
+	// If yay is already installed, context cancellation won't be tested because
+	// the function returns early with "Yay is already installed!"
+	if platform.IsYayInstalled() {
+		t.Skip("Skipping context cancellation test because yay is already installed")
 	}
 
 	// Create a cancelled context
@@ -251,22 +266,29 @@ func TestInstallYay_ErrorMessageFormatting(t *testing.T) {
 
 	// Test error message formatting for different scenarios
 	tests := []struct {
-		name        string
-		mockOS      platform.Platform
-		wantErr     bool
-		errContains string
+		name          string
+		mockOS        platform.Platform
+		wantErr       bool
+		errContains   string
+		skipCondition func() bool
 	}{
 		{
-			name:        "error message formatting on non-Arch",
-			mockOS:      platform.Debian,
-			wantErr:     true,
-			errContains: "yay can only be installed on Arch Linux",
+			name:          "error message formatting on non-Arch",
+			mockOS:        platform.Debian,
+			wantErr:       true,
+			errContains:   "yay can only be installed on Arch Linux",
+			skipCondition: nil,
 		},
 		{
 			name:        "error message formatting in test environment",
 			mockOS:      platform.Arch,
 			wantErr:     true,
 			errContains: "skipping yay installation in test environment",
+			skipCondition: func() bool {
+				// Skip this test if yay is already installed, since the function
+				// returns early with "Yay is already installed!" message
+				return platform.IsYayInstalled()
+			},
 		},
 	}
 
@@ -275,6 +297,11 @@ func TestInstallYay_ErrorMessageFormatting(t *testing.T) {
 			currentOS := platform.Detect()
 			if currentOS != tt.mockOS {
 				t.Skipf("Skipping test: expected OS %s, but running on %s", tt.mockOS, currentOS)
+			}
+
+			// Check skip condition if provided
+			if tt.skipCondition != nil && tt.skipCondition() {
+				t.Skipf("Skipping test case based on skip condition")
 			}
 
 			_, err := installYay(context.Background())

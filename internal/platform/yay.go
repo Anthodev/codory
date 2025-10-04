@@ -38,9 +38,8 @@ func (y *YayInstaller) Install(ctx context.Context) error {
 		return err
 	}
 
-	// Prevent installation in test mode (check multiple indicators)
-	// Check both the global test environment and the instance test mode function
-	if isTestEnvironment() || (y.isTestMode != nil && y.isTestMode()) {
+	// Check test mode (only block actual installation)
+	if y.isTestMode != nil && y.isTestMode() {
 		return fmt.Errorf("installation blocked in test mode")
 	}
 
@@ -92,9 +91,8 @@ func (y *YayInstaller) Install(ctx context.Context) error {
 }
 
 func (y *YayInstaller) ensureBaseDevel(ctx context.Context) error {
-	// Block in test mode before any sudo commands
-	// Check both the global test environment and the instance test mode function
-	if isTestEnvironment() || (y.isTestMode != nil && y.isTestMode()) {
+	// Check test mode (only block actual installation)
+	if y.isTestMode != nil && y.isTestMode() {
 		return fmt.Errorf("installation blocked in test mode")
 	}
 

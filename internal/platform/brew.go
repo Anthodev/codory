@@ -42,13 +42,12 @@ func (b *BrewInstaller) validateRequirements() error {
 }
 
 func (b *BrewInstaller) Install(ctx context.Context) error {
-
 	if err := b.validateRequirements(); err != nil {
 		return err
 	}
 
-	// Check both the global test environment and the instance test mode function
-	if isTestEnvironment() || (b.isTestMode != nil && b.isTestMode()) {
+	// Check test mode (only block actual installation)
+	if b.isTestMode != nil && b.isTestMode() {
 		return fmt.Errorf("installation blocked in test mode")
 	}
 

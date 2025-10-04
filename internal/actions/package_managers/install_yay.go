@@ -30,7 +30,7 @@ func installYay(ctx context.Context) (string, error) {
 		return "Yay is already installed!", nil
 	}
 
-	// Check if we're in test mode (multiple detection methods)
+	// Check if we're in test mode (only block actual installation)
 	if isTestEnvironment() {
 		return "", fmt.Errorf("skipping yay installation in test environment")
 	}
