@@ -1,11 +1,18 @@
 package platform
 
 import (
+	"os"
 	"runtime"
 	"testing"
 )
 
 func TestDetect(t *testing.T) {
+	// Ensure we're in test mode
+	SetTestMode(true)
+	defer SetTestMode(false)
+	os.Setenv("CODORY_TEST", "1")
+	defer os.Unsetenv("CODORY_TEST")
+
 	got := Detect()
 
 	// Test that Detect returns the correct platform based on runtime.GOOS
@@ -31,6 +38,12 @@ func TestDetect(t *testing.T) {
 }
 
 func TestDetectInfo(t *testing.T) {
+	// Ensure we're in test mode
+	SetTestMode(true)
+	defer SetTestMode(false)
+	os.Setenv("CODORY_TEST", "1")
+	defer os.Unsetenv("CODORY_TEST")
+
 	info := DetectInfo()
 
 	if info.OS == "" {
@@ -39,6 +52,11 @@ func TestDetectInfo(t *testing.T) {
 
 	if info.PackageManagers == nil {
 		t.Error("DetectInfo() returned nil PackageManagers")
+	}
+
+	// Test that PackageManagers is properly initialized
+	if len(info.PackageManagers) == 0 {
+		t.Log("DetectInfo() returned empty PackageManagers slice (this may be expected on some systems)")
 	}
 }
 
@@ -176,6 +194,12 @@ func TestIsYayInstalled(t *testing.T) {
 }
 
 func TestIsPacmanInstalled(t *testing.T) {
+	// Ensure we're in test mode
+	SetTestMode(true)
+	defer SetTestMode(false)
+	os.Setenv("CODORY_TEST", "1")
+	defer os.Unsetenv("CODORY_TEST")
+
 	// Test IsPacmanInstalled function
 	result := IsPacmanInstalled()
 
@@ -184,6 +208,84 @@ func TestIsPacmanInstalled(t *testing.T) {
 	if result != true && result != false {
 		t.Error("IsPacmanInstalled() should return a boolean value")
 	}
+}
+
+func TestIsBrewInstalled(t *testing.T) {
+	// Ensure we're in test mode
+	SetTestMode(true)
+	defer SetTestMode(false)
+	os.Setenv("CODORY_TEST", "1")
+	defer os.Unsetenv("CODORY_TEST")
+
+	// Test IsBrewInstalled function
+	result := IsBrewInstalled()
+
+	// We can't predict the exact result since it depends on the system
+	// but we can verify it returns a boolean value without error
+	if result != true && result != false {
+		t.Error("IsBrewInstalled() should return a boolean value")
+	}
+}
+
+func TestDetectLinuxDistro(t *testing.T) {
+	// Ensure we're in test mode
+	SetTestMode(true)
+	defer SetTestMode(false)
+	os.Setenv("CODORY_TEST", "1")
+	defer os.Unsetenv("CODORY_TEST")
+
+	// Only test this function on Linux
+	if runtime.GOOS != "linux" {
+		t.Skip("Skipping detectLinuxDistro test on non-Linux system")
+	}
+
+	result := detectLinuxDistro()
+
+	// On Linux, we expect either Debian, Arch, or Unknown
+	if result != Debian && result != Arch && result != Unknown {
+		t.Errorf("detectLinuxDistro() = %v, want one of %v, %v, or %v", result, Debian, Arch, Unknown)
+	}
+}
+
+func TestSetTestMode(t *testing.T) {
+	// Test setting test mode
+	SetTestMode(true)
+	if !testMode {
+		t.Error("SetTestMode(true) did not set testMode to true")
+	}
+
+	// Test unsetting test mode
+	SetTestMode(false)
+	if testMode {
+		t.Error("SetTestMode(false) did not set testMode to false")
+	}
+}
+
+func TestIsTestEnvironment(t *testing.T) {
+	// Ensure we're in test mode
+	SetTestMode(true)
+	defer SetTestMode(false)
+	os.Setenv("CODORY_TEST", "1")
+	defer os.Unsetenv("CODORY_TEST")
+
+	// Test that isTestEnvironment returns true when test mode is set
+	if !isTestEnvironment() {
+		t.Error("isTestEnvironment() should return true when test mode is set")
+	}
+
+	// Test with CODORY_TEST environment variable
+	os.Setenv("CODORY_TEST", "1")
+	if !isTestEnvironment() {
+		t.Error("isTestEnvironment() should return true when CODORY_TEST=1")
+	}
+	os.Unsetenv("CODORY_TEST")
+
+	// Test with GO_TEST environment variable
+	os.Setenv("GO_TEST", "1")
+	if !isTestEnvironment() {
+		t.Error("isTestEnvironment() should return true when GO_TEST=1")
+	}
+	os.Unsetenv("GO_TEST")
 }
 
 func TestInfo_HasPackageManager(t *testing.T) {

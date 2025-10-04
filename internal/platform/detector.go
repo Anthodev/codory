@@ -1,10 +1,18 @@
 package platform
 
 import (
+	"os"
 	"os/exec"
 	"runtime"
 	"slices"
+	"strings"
 )
+
+var testMode = false
+
+func SetTestMode(enabled bool) {
+	testMode = enabled
+}
 
 // Platform represents a system platform
 type Platform string
@@ -50,17 +58,14 @@ func Detect() Platform {
 }
 
 func detectLinuxDistro() Platform {
-	// Vérifier si c'est une distribution basée sur Debian
 	if fileExists("/etc/debian_version") {
 		return Debian
 	}
 
-	// Vérifier si c'est Arch Linux
 	if fileExists("/etc/arch-release") {
 		return Arch
 	}
 
-	// Vérifier via les gestionnaires de paquets
 	if commandExists("apt") || commandExists("apt-get") {
 		return Debian
 	}
@@ -105,7 +110,6 @@ func DetectInfo() Info {
 		}
 	}
 
-	// Brew peut aussi être disponible sur Linux
 	if info.OS == Debian || info.OS == Arch {
 		if commandExists("brew") {
 			info.PackageManagers = append(info.PackageManagers, PackageManagerBrew)
@@ -125,6 +129,10 @@ func IsYayInstalled() bool {
 
 func IsPacmanInstalled() bool {
 	return commandExists("pacman")
+}
+
+func IsBrewInstalled() bool {
+	return commandExists("brew")
 }
 
 func fileExists(path string) bool {
@@ -154,4 +162,31 @@ func (p Platform) DisplayName() string {
 	default:
 		return "Unknown"
 	}
+}
+
+func isTestEnvironment() bool {
+	// 1. Check package-level test mode flag (set by tests)
+	if testMode {
+		return true
+	}
+
+	// 2. Check CODORY_TEST environment variable
+	if os.Getenv("CODORY_TEST") == "1" {
+		return true
+	}
+
+	// 3. Check GO_TEST environment variable
+	if os.Getenv("GO_TEST") == "1" {
+		return true
+	}
+
+	// 4. Check if test binary is running (test binaries have .test suffix or contain .test. in name)
+	if exePath, err := os.Executable(); err == nil {
+		if len(exePath) > 0 {
+			// Check if it's a test binary
+			return strings.Contains(exePath, ".test") || strings.Contains(exePath, "_test")
+		}
+	}
+
+	return false
 }

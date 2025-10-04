@@ -10,15 +10,17 @@ import (
 
 // Executor executes actions
 type Executor struct {
-	platformInfo platform.Info
-	yayInstaller *platform.YayInstaller
+	platformInfo  platform.Info
+	yayInstaller  *platform.YayInstaller
+	brewInstaller *platform.BrewInstaller
 }
 
 // NewExecutor creates a new executor
 func NewExecutor() *Executor {
 	return &Executor{
-		platformInfo: platform.DetectInfo(),
-		yayInstaller: platform.NewYayInstaller(nil),
+		platformInfo:  platform.DetectInfo(),
+		yayInstaller:  platform.NewYayInstaller(nil),
+		brewInstaller: platform.NewBrewInstaller(nil),
 	}
 }
 

@@ -2,6 +2,7 @@ package actions
 
 import (
 	"context"
+	"os"
 	"testing"
 
 	"anthodev/codory/internal/platform"
@@ -15,6 +16,11 @@ func createMockPlatformInfo(os platform.Platform) platform.Info {
 	}
 }
 
+// SetTestMode sets the test mode for the platform package
+func setPlatformTestMode(enabled bool) {
+	platform.SetTestMode(enabled)
+}
+
 // Helper function to create test platform info
 func createTestPlatformInfo(os platform.Platform) platform.Info {
 	return platform.Info{
@@ -24,6 +30,12 @@ func createTestPlatformInfo(os platform.Platform) platform.Info {
 }
 
 func TestNewExecutor(t *testing.T) {
+	// Ensure we're in test mode
+	setPlatformTestMode(true)
+	defer setPlatformTestMode(false)
+	os.Setenv("CODORY_TEST", "1")
+	defer os.Unsetenv("CODORY_TEST")
+
 	executor := NewExecutor()
 	if executor == nil {
 		t.Fatal("NewExecutor() returned nil")
@@ -31,14 +43,27 @@ func TestNewExecutor(t *testing.T) {
 	if executor.platformInfo.OS == "" {
 		t.Error("Expected platform info to be set")
 	}
+	if executor.yayInstaller == nil {
+		t.Error("Expected yayInstaller to be set")
+	}
+	if executor.brewInstaller == nil {
+		t.Error("Expected brewInstaller to be set")
+	}
 }
 
 func TestExecutor_Execute(t *testing.T) {
+	// Ensure we're in test mode
+	setPlatformTestMode(true)
+	defer setPlatformTestMode(false)
+	os.Setenv("CODORY_TEST", "1")
+	defer os.Unsetenv("CODORY_TEST")
+
 	tests := []struct {
 		name        string
 		action      *Action
 		wantErr     bool
 		errContains string
+		wantResult  string
 	}{
 		{
 			name: "function action with handler",
@@ -49,7 +74,8 @@ func TestExecutor_Execute(t *testing.T) {
 					return "function result", nil
 				},
 			},
-			wantErr: false,
+			wantErr:    false,
+			wantResult: "function result",
 		},
 		{
 			name: "function action without handler",
@@ -68,6 +94,18 @@ func TestExecutor_Execute(t *testing.T) {
 			},
 			wantErr:     true,
 			errContains: "unknown action type",
+		},
+		{
+			name: "function action with error",
+			action: &Action{
+				ID:   "test-function-error",
+				Type: ActionTypeFunction,
+				Handler: func(ctx context.Context) (string, error) {
+					return "", context.DeadlineExceeded
+				},
+			},
+			wantErr:     true,
+			errContains: "context deadline exceeded",
 		},
 	}
 
@@ -88,8 +126,8 @@ func TestExecutor_Execute(t *testing.T) {
 				if err != nil {
 					t.Errorf("Unexpected error: %v", err)
 				}
-				if tt.action.Type == ActionTypeFunction && result != "function result" {
-					t.Errorf("Expected 'function result', got '%s'", result)
+				if tt.wantResult != "" && result != tt.wantResult {
+					t.Errorf("Expected '%s', got '%s'", tt.wantResult, result)
 				}
 			}
 		})
@@ -97,6 +135,12 @@ func TestExecutor_Execute(t *testing.T) {
 }
 
 func TestExecutor_executeCommand(t *testing.T) {
+	// Ensure we're in test mode
+	setPlatformTestMode(true)
+	defer setPlatformTestMode(false)
+	os.Setenv("CODORY_TEST", "1")
+	defer os.Unsetenv("CODORY_TEST")
+
 	tests := []struct {
 		name        string
 		action      *Action
@@ -154,6 +198,34 @@ func TestExecutor_executeCommand(t *testing.T) {
 			wantErr:     true,
 			errContains: "empty command",
 		},
+		{
+			name: "command with package source",
+			action: &Action{
+				ID:   "test-command-package-source",
+				Type: ActionTypeCommand,
+				PlatformCommands: map[Platform]PlatformCommand{
+					PlatformLinux: {
+						Command:       "echo test",
+						PackageSource: PackageSourceOfficial,
+					},
+				},
+			},
+			mockOS:  PlatformLinux,
+			wantErr: false,
+		},
+		{
+			name: "command that fails",
+			action: &Action{
+				ID:   "test-command-fails",
+				Type: ActionTypeCommand,
+				PlatformCommands: map[Platform]PlatformCommand{
+					PlatformLinux: {Command: "false"},
+				},
+			},
+			mockOS:      PlatformLinux,
+			wantErr:     true,
+			errContains: "command failed",
+		},
 	}
 
 	for _, tt := range tests {
@@ -183,11 +255,20 @@ func TestExecutor_executeCommand(t *testing.T) {
 }
 
 func TestExecutor_GetPlatformInfo(t *testing.T) {
+	// Ensure we're in test mode
+	setPlatformTestMode(true)
+	defer setPlatformTestMode(false)
+	os.Setenv("CODORY_TEST", "1")
+	defer os.Unsetenv("CODORY_TEST")
+
 	executor := NewExecutor()
 	info := executor.GetPlatformInfo()
 
 	if info.OS == "" {
 		t.Error("Expected platform info to have OS set")
+	}
+	if info.PackageManagers == nil {
+		t.Error("Expected platform info to have PackageManagers set")
 	}
 }
 
@@ -197,6 +278,12 @@ func contains(s, substr string) bool {
 }
 
 func TestExecutor_checkPackageManagerDependency(t *testing.T) {
+	// Ensure we're in test mode
+	setPlatformTestMode(true)
+	defer setPlatformTestMode(false)
+	os.Setenv("CODORY_TEST", "1")
+	defer os.Unsetenv("CODORY_TEST")
+
 	tests := []struct {
 		name        string
 		executor    *Executor
@@ -227,6 +314,19 @@ func TestExecutor_checkPackageManagerDependency(t *testing.T) {
 			},
 		},
 		{
+			name: "AUR on Arch without yay installed",
+			executor: &Executor{
+				platformInfo: createMockPlatformInfo(platform.Arch),
+			},
+			source:      PackageSourceAUR,
+			wantErr:     true,
+			errContains: "yay is not installed",
+			skipFunc: func() bool {
+				// Skip this test case if yay is actually installed on the system
+				return platform.IsYayInstalled()
+			},
+		},
+		{
 			name: "official package source",
 			executor: &Executor{
 				platformInfo: createMockPlatformInfo(platform.Debian),
@@ -240,6 +340,14 @@ func TestExecutor_checkPackageManagerDependency(t *testing.T) {
 				platformInfo: createMockPlatformInfo(platform.MacOS),
 			},
 			source:  PackageSourceBrew,
+			wantErr: false,
+		},
+		{
+			name: "unknown package source",
+			executor: &Executor{
+				platformInfo: createMockPlatformInfo(platform.Debian),
+			},
+			source:  PackageSource("unknown"),
 			wantErr: false,
 		},
 	}
@@ -267,6 +375,12 @@ func TestExecutor_checkPackageManagerDependency(t *testing.T) {
 }
 
 func TestExecutor_NeedsPackageManagerInstallation(t *testing.T) {
+	// Ensure we're in test mode
+	setPlatformTestMode(true)
+	defer setPlatformTestMode(false)
+	os.Setenv("CODORY_TEST", "1")
+	defer os.Unsetenv("CODORY_TEST")
+
 	tests := []struct {
 		name       string
 		executor   *Executor

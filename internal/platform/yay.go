@@ -3,16 +3,8 @@ package platform
 import (
 	"context"
 	"fmt"
-	"os"
 	"os/exec"
-	"strings"
 )
-
-var testMode = false
-
-func SetTestMode(enabled bool) {
-	testMode = enabled
-}
 
 type YayInstaller struct {
 	isTestMode func() bool
@@ -22,31 +14,6 @@ func NewYayInstaller(isTestMode func() bool) *YayInstaller {
 	return &YayInstaller{
 		isTestMode: isTestMode,
 	}
-}
-
-func isTestEnvironment() bool {
-	if testMode {
-		return true
-	}
-
-	// 2. Check CODORY_TEST environment variable
-	if os.Getenv("CODORY_TEST") == "1" {
-		return true
-	}
-
-	// 3. Check GO_TEST environment variable
-	if os.Getenv("GO_TEST") == "1" {
-		return true
-	}
-
-	// 4. Check if test binary is running
-	if exePath, err := os.Executable(); err == nil {
-		if len(exePath) > 0 {
-			return strings.Contains(exePath, ".test") || strings.Contains(exePath, "_test")
-		}
-	}
-
-	return false
 }
 
 func (y *YayInstaller) validateRequirements() error {
@@ -71,13 +38,16 @@ func (y *YayInstaller) Install(ctx context.Context) error {
 		return err
 	}
 
-	// Prevent installation in test mode (check multiple indicators)
-	if isTestEnvironment() {
+	// Check test mode (only block actual installation)
+	if y.isTestMode != nil && y.isTestMode() {
 		return fmt.Errorf("installation blocked in test mode")
 	}
 
-	if y.isTestMode != nil && y.isTestMode() {
-		return fmt.Errorf("installation blocked in test mode")
+	// Check for context cancellation before actual installation steps
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
 	}
 
 	if err := y.ensureBaseDevel(ctx); err != nil {
@@ -88,10 +58,24 @@ func (y *YayInstaller) Install(ctx context.Context) error {
 
 	exec.CommandContext(ctx, "rm", "-rf", tmpDir).Run()
 
+	// Check context before executing commands
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+	}
+
 	cloneCmd := exec.CommandContext(ctx, "git", "clone",
 		"https://aur.archlinux.org/yay.git", tmpDir)
 	if output, err := cloneCmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("failed to clone yay: %w\n%s", err, output)
+	}
+
+	// Check context before build step
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
 	}
 
 	makepkgCmd := exec.CommandContext(ctx, "makepkg", "-si", "--noconfirm")
@@ -107,8 +91,8 @@ func (y *YayInstaller) Install(ctx context.Context) error {
 }
 
 func (y *YayInstaller) ensureBaseDevel(ctx context.Context) error {
-	// Block in test mode before any sudo commands
-	if isTestEnvironment() {
+	// Check test mode (only block actual installation)
+	if y.isTestMode != nil && y.isTestMode() {
 		return fmt.Errorf("installation blocked in test mode")
 	}
 
