@@ -27,16 +27,18 @@ func TestInit(t *testing.T) {
 		t.Errorf("Expected package_managers category description to be 'Tools and utilities specific to Linux', got '%s'", packageManagersCategory.Description)
 	}
 
-	// Check if InstallYay action is registered
-	if len(packageManagersCategory.Actions) != 1 {
-		t.Fatalf("Expected 1 action in package_managers category, got %d", len(packageManagersCategory.Actions))
+	// Check if both actions are registered
+	if len(packageManagersCategory.Actions) != 2 {
+		t.Fatalf("Expected 2 actions in package_managers category, got %d", len(packageManagersCategory.Actions))
 	}
 
 	var installYayAction *actions.Action
+	var installBrewAction *actions.Action
 	for _, action := range packageManagersCategory.Actions {
 		if action.ID == "install_yay" {
 			installYayAction = action
-			break
+		} else if action.ID == "install_brew" {
+			installBrewAction = action
 		}
 	}
 
@@ -44,6 +46,11 @@ func TestInit(t *testing.T) {
 		t.Fatal("InstallYay action not found in package_managers category")
 	}
 
+	if installBrewAction == nil {
+		t.Fatal("InstallBrew action not found in package_managers category")
+	}
+
+	// Test InstallYay action properties
 	if installYayAction.Name != "Install Yay (AUR Helper)" {
 		t.Errorf("Expected InstallYay action name to be 'Install Yay (AUR Helper)', got '%s'", installYayAction.Name)
 	}
@@ -61,11 +68,36 @@ func TestInit(t *testing.T) {
 	}
 
 	if len(installYayAction.VisibleOnPlatforms) != 1 {
-		t.Fatalf("Expected 1 visible platform, got %d", len(installYayAction.VisibleOnPlatforms))
+		t.Fatalf("Expected 1 visible platform for InstallYay, got %d", len(installYayAction.VisibleOnPlatforms))
 	}
 
 	if installYayAction.VisibleOnPlatforms[0] != actions.PlatformArch {
 		t.Errorf("Expected InstallYay action to be visible on 'arch' platform, got '%s'", installYayAction.VisibleOnPlatforms[0])
+	}
+
+	// Test InstallBrew action properties
+	if installBrewAction.Name != "Install Homebrew" {
+		t.Errorf("Expected InstallBrew action name to be 'Install Homebrew', got '%s'", installBrewAction.Name)
+	}
+
+	if installBrewAction.Description != "Install Homebrew on the system" {
+		t.Errorf("Expected InstallBrew action description to be 'Install Homebrew on the system', got '%s'", installBrewAction.Description)
+	}
+
+	if installBrewAction.Type != actions.ActionTypeFunction {
+		t.Errorf("Expected InstallBrew action type to be 'function', got '%s'", installBrewAction.Type)
+	}
+
+	if installBrewAction.Handler == nil {
+		t.Error("InstallBrew action has no handler")
+	}
+
+	if len(installBrewAction.HiddenOnPlatforms) != 1 {
+		t.Fatalf("Expected 1 hidden platform for InstallBrew, got %d", len(installBrewAction.HiddenOnPlatforms))
+	}
+
+	if installBrewAction.HiddenOnPlatforms[0] != actions.PlatformWindows {
+		t.Errorf("Expected InstallBrew action to be hidden on 'windows' platform, got '%s'", installBrewAction.HiddenOnPlatforms[0])
 	}
 }
 

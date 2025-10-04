@@ -2,6 +2,7 @@ package package_managers
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"testing"
 
@@ -127,6 +128,32 @@ func TestInstallYay_ValidationOnly(t *testing.T) {
 	}
 }
 
+func TestInstallYay_ContextCancellation(t *testing.T) {
+	// Ensure we're in test mode
+	SetTestMode(true)
+	defer SetTestMode(false)
+	os.Setenv("CODORY_TEST", "1")
+	defer os.Unsetenv("CODORY_TEST")
+
+	// This test only runs on Arch Linux to validate context cancellation
+	if platform.Detect() != platform.Arch {
+		t.Skip("Skipping context cancellation test on non-Arch system")
+	}
+
+	// Create a cancelled context
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // Cancel immediately
+
+	// Test with cancelled context
+	result, err := installYay(ctx)
+	if err == nil {
+		t.Error("Expected error with cancelled context, got none")
+	}
+	if result != "" {
+		t.Error("Expected empty result with cancelled context")
+	}
+}
+
 func TestInstallYay_ArchValidationOnly(t *testing.T) {
 	// Ensure we're in test mode
 	SetTestMode(true)
@@ -215,7 +242,140 @@ func TestValidateInstallYayRequirements(t *testing.T) {
 	}
 }
 
+func TestInstallYay_ErrorMessageFormatting(t *testing.T) {
+	// Ensure we're in test mode
+	SetTestMode(true)
+	defer SetTestMode(false)
+	os.Setenv("CODORY_TEST", "1")
+	defer os.Unsetenv("CODORY_TEST")
+
+	// Test error message formatting for different scenarios
+	tests := []struct {
+		name        string
+		mockOS      platform.Platform
+		wantErr     bool
+		errContains string
+	}{
+		{
+			name:        "error message formatting on non-Arch",
+			mockOS:      platform.Debian,
+			wantErr:     true,
+			errContains: "yay can only be installed on Arch Linux",
+		},
+		{
+			name:        "error message formatting in test environment",
+			mockOS:      platform.Arch,
+			wantErr:     true,
+			errContains: "skipping yay installation in test environment",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			currentOS := platform.Detect()
+			if currentOS != tt.mockOS {
+				t.Skipf("Skipping test: expected OS %s, but running on %s", tt.mockOS, currentOS)
+			}
+
+			_, err := installYay(context.Background())
+
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("Expected error but got none")
+				} else if tt.errContains != "" && !contains(err.Error(), tt.errContains) {
+					t.Errorf("Expected error to contain '%s', got '%s'", tt.errContains, err.Error())
+				}
+
+				// Test that error messages are properly formatted with context
+				if err != nil && len(err.Error()) < 10 {
+					t.Errorf("Error message seems too short to be properly formatted: %s", err.Error())
+				}
+			}
+		})
+	}
+}
+
+func TestInstallYay_ValidateInstallYayRequirements_ErrorWrapping(t *testing.T) {
+	// Ensure we're in test mode
+	SetTestMode(true)
+	defer SetTestMode(false)
+	os.Setenv("CODORY_TEST", "1")
+	defer os.Unsetenv("CODORY_TEST")
+
+	// Test error wrapping in validateInstallYayRequirements
+	currentOS := platform.Detect()
+	if currentOS == platform.Arch {
+		t.Skip("Skipping error wrapping test on Arch system")
+	}
+
+	err := validateInstallYayRequirements()
+	if err == nil {
+		t.Error("Expected error on non-Arch platform")
+	}
+
+	// Test that the error is properly formatted
+	expectedMsg := "yay can only be installed on Arch Linux"
+	if err != nil && !contains(err.Error(), expectedMsg) {
+		t.Errorf("Expected error to contain '%s', got '%s'", expectedMsg, err.Error())
+	}
+}
+
+func TestInstallYay_InstallYay_ErrorWrapping(t *testing.T) {
+	// Ensure we're in test mode
+	SetTestMode(true)
+	defer SetTestMode(false)
+	os.Setenv("CODORY_TEST", "1")
+	defer os.Unsetenv("CODORY_TEST")
+
+	// Test error wrapping in the main installYay function
+	currentOS := platform.Detect()
+	if currentOS != platform.Arch {
+		t.Skip("Skipping install error wrapping test on non-Arch system")
+	}
+
+	if platform.IsYayInstalled() {
+		t.Skip("Skipping install error wrapping test because yay is already installed")
+	}
+
+	_, err := installYay(context.Background())
+	if err == nil {
+		t.Error("Expected error in test environment")
+	}
+
+	// Test that the error message is properly formatted
+	if err != nil && !contains(err.Error(), "skipping yay installation in test environment") {
+		t.Errorf("Expected error to contain 'skipping yay installation in test environment', got: %v", err)
+	}
+}
+
 // Helper function
 func contains(s, substr string) bool {
 	return len(s) >= len(substr) && (s == substr || len(s) > len(substr) && (s[:len(substr)] == substr || contains(s[1:], substr)))
+}
+
+// Test helper function to verify string contains functionality
+func TestContainsHelper(t *testing.T) {
+	tests := []struct {
+		s      string
+		substr string
+		want   bool
+	}{
+		{"hello world", "world", true},
+		{"hello world", "foo", false},
+		{"", "foo", false},
+		{"foo", "", true},
+		{"foo", "foo", true},
+		{"foobar", "foo", true},
+		{"foobar", "bar", true},
+		{"foobar", "baz", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(fmt.Sprintf("contains(%q, %q)", tt.s, tt.substr), func(t *testing.T) {
+			got := contains(tt.s, tt.substr)
+			if got != tt.want {
+				t.Errorf("contains(%q, %q) = %v, want %v", tt.s, tt.substr, got, tt.want)
+			}
+		})
+	}
 }

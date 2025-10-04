@@ -2,6 +2,7 @@ package platform
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"testing"
 )
@@ -151,6 +152,46 @@ func TestYayInstaller_ensureBaseDevel(t *testing.T) {
 	}
 }
 
+func TestYayInstaller_Install_ContextCancellation(t *testing.T) {
+	// Ensure we're in test mode
+	SetTestMode(true)
+	defer SetTestMode(false)
+	os.Setenv("CODORY_TEST", "1")
+	defer os.Unsetenv("CODORY_TEST")
+
+	// Skip this test entirely on non-Arch systems to avoid any installation attempts
+	if Detect() != Arch {
+		t.Skip("Skipping Install context cancellation test on non-Arch system")
+	}
+
+	// Skip this test entirely if pacman is not available
+	if !IsPacmanInstalled() {
+		t.Skip("Pacman not found on this system, skipping test")
+	}
+
+	// Skip this test entirely if git is not available
+	if !commandExists("git") {
+		t.Skip("Git not found on this system, skipping test")
+	}
+
+	testMode := func() bool { return true }
+	installer := NewYayInstaller(testMode)
+
+	// Create a cancelled context
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // Cancel immediately
+
+	// Test with cancelled context
+	err := installer.Install(ctx)
+
+	// We expect an error since we're in a test environment with cancelled context
+	if err == nil {
+		t.Error("Expected Install to fail with cancelled context, but it succeeded")
+	} else {
+		t.Logf("Install failed as expected with cancelled context: %v", err)
+	}
+}
+
 func TestYayInstaller_Install(t *testing.T) {
 	// Ensure we're in test mode
 	SetTestMode(true)
@@ -193,7 +234,144 @@ func TestYayInstaller_Install(t *testing.T) {
 	}
 }
 
+func TestYayInstaller_ValidateRequirements_ErrorWrapping(t *testing.T) {
+	// Ensure we're in test mode
+	SetTestMode(true)
+	defer SetTestMode(false)
+	os.Setenv("CODORY_TEST", "1")
+	defer os.Unsetenv("CODORY_TEST")
+
+	// Test error wrapping in validateRequirements
+	currentOS := Detect()
+	if currentOS == Arch {
+		t.Skip("Skipping validation error wrapping test on Arch system")
+	}
+
+	testMode := func() bool { return true }
+	installer := NewYayInstaller(testMode)
+	err := installer.validateRequirements()
+
+	// We expect an error since we're not on Arch
+	if err == nil {
+		t.Error("Expected validation error on non-Arch platform")
+	}
+
+	// Test that the error message is properly formatted
+	expectedMsg := "yay can only be installed on Arch Linux"
+	if err != nil && !contains(err.Error(), expectedMsg) {
+		t.Errorf("Expected error to contain '%s', got '%s'", expectedMsg, err.Error())
+	}
+}
+
+func TestYayInstaller_ensureBaseDevel_ErrorWrapping(t *testing.T) {
+	// Ensure we're in test mode
+	SetTestMode(true)
+	defer SetTestMode(false)
+	os.Setenv("CODORY_TEST", "1")
+	defer os.Unsetenv("CODORY_TEST")
+
+	// Skip this test entirely if not on Arch Linux
+	if Detect() != Arch {
+		t.Skip("Skipping base-devel error wrapping test on non-Arch system")
+	}
+
+	// Skip this test entirely if pacman is not available
+	if !IsPacmanInstalled() {
+		t.Skip("Pacman not found on this system, skipping test")
+	}
+
+	testMode := func() bool { return true }
+	installer := NewYayInstaller(testMode)
+
+	// This test validates error wrapping in ensureBaseDevel
+	err := installer.ensureBaseDevel(context.Background())
+
+	// We expect the function to either succeed (if base-devel is already installed)
+	// or fail gracefully (if it needs to be installed but can't in test environment)
+	// The important thing is that any error is properly wrapped
+	if err != nil {
+		// Check that the error is properly formatted with context
+		if len(err.Error()) < 10 {
+			t.Errorf("Error message seems too short to be properly formatted: %s", err.Error())
+		}
+		// Check for expected error patterns
+		if !contains(err.Error(), "base-devel") && !contains(err.Error(), "installation blocked") {
+			t.Errorf("Expected error to contain 'base-devel' or 'installation blocked', got: %v", err)
+		}
+	}
+}
+
+func TestYayInstaller_Install_ErrorWrapping(t *testing.T) {
+	// Ensure we're in test mode
+	SetTestMode(true)
+	defer SetTestMode(false)
+	os.Setenv("CODORY_TEST", "1")
+	defer os.Unsetenv("CODORY_TEST")
+
+	// Skip this test entirely on non-Arch systems to avoid any installation attempts
+	if Detect() != Arch {
+		t.Skip("Skipping Install error wrapping test on non-Arch system")
+	}
+
+	// Skip this test entirely if pacman is not available
+	if !IsPacmanInstalled() {
+		t.Skip("Pacman not found on this system, skipping test")
+	}
+
+	// Skip this test entirely if git is not available
+	if !commandExists("git") {
+		t.Skip("Git not found on this system, skipping test")
+	}
+
+	testMode := func() bool { return true }
+	installer := NewYayInstaller(testMode)
+
+	// This test validates error wrapping in the Install method
+	err := installer.Install(context.Background())
+
+	// We expect an error since we're in a test environment
+	if err == nil {
+		t.Error("Expected Install to fail in test environment, but it succeeded")
+	} else {
+		// Verify that the error is properly formatted
+		if len(err.Error()) < 10 {
+			t.Errorf("Error message seems too short to be properly formatted: %s", err.Error())
+		}
+		// Check for expected error patterns
+		if !contains(err.Error(), "installation blocked") {
+			t.Errorf("Expected error to contain 'installation blocked', got: %v", err)
+		}
+	}
+}
+
 // Helper function
 func contains(s, substr string) bool {
 	return len(s) >= len(substr) && (s == substr || len(s) > len(substr) && (s[:len(substr)] == substr || contains(s[1:], substr)))
+}
+
+// Test helper function to verify string contains functionality
+func TestContainsHelper(t *testing.T) {
+	tests := []struct {
+		s      string
+		substr string
+		want   bool
+	}{
+		{"hello world", "world", true},
+		{"hello world", "foo", false},
+		{"", "foo", false},
+		{"foo", "", true},
+		{"foo", "foo", true},
+		{"foobar", "foo", true},
+		{"foobar", "bar", true},
+		{"foobar", "baz", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(fmt.Sprintf("contains(%q, %q)", tt.s, tt.substr), func(t *testing.T) {
+			got := contains(tt.s, tt.substr)
+			if got != tt.want {
+				t.Errorf("contains(%q, %q) = %v, want %v", tt.s, tt.substr, got, tt.want)
+			}
+		})
+	}
 }
