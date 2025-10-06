@@ -18,4 +18,5 @@ func init() {
 	registry.RegisterAction("dev", NewUUIDv4Action())
 	registry.RegisterAction("dev", NewUUIDv7Action())
 	registry.RegisterAction("dev", DecodeUUIDv7Action())
+	registry.RegisterAction("dev", NewSymfonySecretAction())
 }
