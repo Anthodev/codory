@@ -26,6 +26,7 @@ func init() {
 
 	registry.RegisterAction("package_managers", NewInstallYayAction())
 	registry.RegisterAction("package_managers", NewInstallBrewAction())
+	registry.RegisterAction("package_managers", NewCheckWingetAction())
 }
 
 // isTestEnvironment checks if we're running in a test environment
