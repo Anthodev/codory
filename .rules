@@ -45,8 +45,10 @@ You are an expert in Go, system applications, and clean backend development prac
 - Separate **fast unit tests** from slower integration and E2E tests.
 - Ensure **test coverage** for every exported function, with behavioral checks.
 - Use tools like 'go test -cover' to ensure adequate test coverage.
+- If updating tests is asked, do not rewrite completely the files, but rather update the existing tests to cover new functionality and modify existing tests as needed.
 
 ### Documentation and Standards:
+- All the documentation should be written in English.
 - Document public functions and packages with **GoDoc-style comments**.
 - Provide concise **READMEs** for services and libraries.
 - Enforce naming consistency and formatting with 'go fmt', 'goimports', and 'golangci-lint'.

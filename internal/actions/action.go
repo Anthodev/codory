@@ -39,6 +39,7 @@ const (
 type PlatformCommand struct {
 	Command       string
 	PackageSource PackageSource
+	CheckCommand  string
 }
 
 // Action represents an executable action
@@ -132,4 +133,23 @@ func (a *Action) HasCommandForPlatform(platform Platform) bool {
 
 	_, ok = a.GetPlatformCommand(PlatformAny)
 	return ok
+}
+
+func (a *Action) HasCheckCommand(platform Platform) bool {
+	cmd, ok := a.GetPlatformCommand(platform)
+	if !ok {
+		return false
+	}
+	return cmd.CheckCommand != ""
+}
+
+func (a *Action) GetCheckCommand(platform Platform) (string, bool) {
+	cmd, ok := a.GetPlatformCommand(platform)
+	if !ok {
+		return "", false
+	}
+	if cmd.CheckCommand == "" {
+		return "", false
+	}
+	return cmd.CheckCommand, true
 }

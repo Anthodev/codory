@@ -58,12 +58,19 @@ func (e *Executor) executeCommand(ctx context.Context, action *Action) (string, 
 		}
 	}
 
-	// Vérifier les dépendances de package manager
+	// Check dependencies
 	if err := e.checkPackageManagerDependency(ctx, platformCmd.PackageSource); err != nil {
 		return "", err
 	}
 
-	// Exécuter la commande
+	// Check if the command exists already
+	if platformCmd.CheckCommand != "" {
+		if commandExists(platformCmd.CheckCommand) {
+			return "Command already exists, skipping installation", nil
+		}
+	}
+
+	// Execute the command
 	cmdStr := platformCmd.Command
 	parts := strings.Fields(cmdStr)
 	if len(parts) == 0 {
@@ -118,4 +125,9 @@ func (e *Executor) NeedsPackageManagerInstallation(action *Action) (bool, Packag
 // GetPlatformInfo returns the platform information
 func (e *Executor) GetPlatformInfo() platform.Info {
 	return e.platformInfo
+}
+
+func commandExists(cmd string) bool {
+	_, err := exec.LookPath(cmd)
+	return err == nil
 }

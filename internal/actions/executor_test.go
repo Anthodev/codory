@@ -226,6 +226,60 @@ func TestExecutor_executeCommand(t *testing.T) {
 			wantErr:     true,
 			errContains: "command failed",
 		},
+		{
+			name: "command with check command - exists",
+			action: &Action{
+				ID:   "test-check-command-exists",
+				Type: ActionTypeCommand,
+				PlatformCommands: map[Platform]PlatformCommand{
+					PlatformLinux: {
+						Command:      "echo should-not-run",
+						CheckCommand: "echo",
+					},
+				},
+			},
+			mockOS:  PlatformLinux,
+			wantErr: false,
+		},
+		{
+			name: "command with check command - not exists",
+			action: &Action{
+				ID:   "test-check-command-not-exists",
+				Type: ActionTypeCommand,
+				PlatformCommands: map[Platform]PlatformCommand{
+					PlatformLinux: {
+						Command:      "echo test",
+						CheckCommand: "nonexistentcommand12345",
+					},
+				},
+			},
+			mockOS:  PlatformLinux,
+			wantErr: false,
+		},
+		{
+			name: "command with PlatformLinux fallback for Debian",
+			action: &Action{
+				ID:   "test-command-linux-fallback",
+				Type: ActionTypeCommand,
+				PlatformCommands: map[Platform]PlatformCommand{
+					PlatformLinux: {Command: "echo linux fallback"},
+				},
+			},
+			mockOS:  PlatformDebian,
+			wantErr: false,
+		},
+		{
+			name: "command with PlatformLinux fallback for Arch",
+			action: &Action{
+				ID:   "test-command-linux-fallback-arch",
+				Type: ActionTypeCommand,
+				PlatformCommands: map[Platform]PlatformCommand{
+					PlatformLinux: {Command: "echo linux fallback arch"},
+				},
+			},
+			mockOS:  PlatformArch,
+			wantErr: false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -248,6 +302,8 @@ func TestExecutor_executeCommand(t *testing.T) {
 				}
 				if result == "" {
 					t.Error("Expected non-empty result")
+				} else if tt.name == "command with check command - exists" && result != "Command already exists, skipping installation" {
+					t.Errorf("Expected skip message, got '%s'", result)
 				}
 			}
 		})
@@ -451,6 +507,26 @@ func TestExecutor_NeedsPackageManagerInstallation(t *testing.T) {
 			},
 			wantNeeds:  false,
 			wantSource: "",
+		},
+		{
+			name: "AUR action with PlatformLinux fallback for Arch",
+			executor: &Executor{
+				platformInfo: createMockPlatformInfo(platform.Arch),
+			},
+			action: &Action{
+				PlatformCommands: map[Platform]PlatformCommand{
+					PlatformLinux: {
+						Command:       "yay -S package",
+						PackageSource: PackageSourceAUR,
+					},
+				},
+			},
+			wantNeeds:  true,
+			wantSource: PackageSourceAUR,
+			skipFunc: func() bool {
+				// Skip this test case if yay is actually installed on the system
+				return platform.IsYayInstalled()
+			},
 		},
 	}
 

@@ -8,6 +8,8 @@ import (
 
 	_ "anthodev/codory/internal/actions/dev"
 	_ "anthodev/codory/internal/actions/package_managers"
+	_ "anthodev/codory/internal/actions/shells"
+	_ "anthodev/codory/internal/actions/shells/zsh"
 	"anthodev/codory/internal/ui"
 )
 
