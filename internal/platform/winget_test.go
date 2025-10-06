@@ -16,7 +16,7 @@ func TestNewWingetChecker(t *testing.T) {
 		t.Fatal("NewWingetChecker() returned nil")
 	}
 
-	if _, ok := interface{}(checker).(*WingetChecker); !ok {
+	if _, ok := any(checker).(*WingetChecker); !ok {
 		t.Fatal("NewWingetChecker() did not return *WingetChecker")
 	}
 }
