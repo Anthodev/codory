@@ -18,5 +18,6 @@ func init() {
 	registry.RegisterCategory("shells", zshCategory)
 
 	// Register actions
-	zshCategory.Actions = append(zshCategory.Actions, NewInstallZshAction())
+	registry.RegisterAction("zsh", NewInstallZshAction())
+	registry.RegisterAction("zsh", SetZshAsDefaultShell())
 }

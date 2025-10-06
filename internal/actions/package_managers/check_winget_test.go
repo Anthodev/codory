@@ -193,7 +193,7 @@ func TestValidateCheckWinget(t *testing.T) {
 				t.Skipf("Skipping test: expected OS %s, but running on %s", tt.mockOS, currentOS)
 			}
 
-			err := validateCheckWinget(context.Background())
+			err := validateCheckWinget()
 
 			if tt.wantErr {
 				if err == nil {

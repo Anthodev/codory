@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"anthodev/codory/internal/actions"
-	_ "anthodev/codory/internal/actions/shells" // Import to ensure shells category is initialized
+	_ "anthodev/codory/internal/actions/shells"
 )
 
 func TestInit(t *testing.T) {
@@ -33,15 +33,27 @@ func TestInit(t *testing.T) {
 		t.Errorf("Expected zsh category description to be 'Install zsh and most common plugins', got '%s'", zshCategory.Description)
 	}
 
-	// Check if the expected action is registered
-	if len(zshCategory.Actions) != 1 {
-		t.Fatalf("Expected 1 action in zsh category, got %d", len(zshCategory.Actions))
+	// Check if the expected actions are registered
+	if len(zshCategory.Actions) != 2 {
+		t.Fatalf("Expected 2 actions in zsh category, got %d", len(zshCategory.Actions))
 	}
 
-	// Verify the install_zsh action is present
-	installZshAction := zshCategory.Actions[0]
-	if installZshAction.ID != "install_zsh" {
-		t.Errorf("Expected action ID to be 'install_zsh', got '%s'", installZshAction.ID)
+	// Verify both actions are present
+	var installZshAction, setZshDefaultAction *actions.Action
+	for _, action := range zshCategory.Actions {
+		switch action.ID {
+		case "install_zsh":
+			installZshAction = action
+		case "set_zsh_default_shell":
+			setZshDefaultAction = action
+		}
+	}
+
+	if installZshAction == nil {
+		t.Error("install_zsh action not found in zsh category")
+	}
+	if setZshDefaultAction == nil {
+		t.Error("set_zsh_default_shell action not found in zsh category")
 	}
 
 	if installZshAction.Name != "Install Zsh" {
@@ -200,10 +212,19 @@ func TestZshActionsHaveCorrectTypes(t *testing.T) {
 		t.Fatal("Zsh category not found")
 	}
 
-	// Verify that all actions are command-type actions
+	// Verify that actions have correct types
 	for _, action := range zshCategory.Actions {
-		if action.Type != actions.ActionTypeCommand {
-			t.Errorf("Action %s should be of type Command, got %s", action.ID, action.Type)
+		switch action.ID {
+		case "install_zsh":
+			if action.Type != actions.ActionTypeCommand {
+				t.Errorf("Action %s should be of type Command, got %s", action.ID, action.Type)
+			}
+		case "set_zsh_default_shell":
+			if action.Type != actions.ActionTypeFunction {
+				t.Errorf("Action %s should be of type Function, got %s", action.ID, action.Type)
+			}
+		default:
+			t.Errorf("Unknown action %s with type %s", action.ID, action.Type)
 		}
 	}
 }
@@ -230,14 +251,27 @@ func TestZshCategoryRegistrationVerification(t *testing.T) {
 		t.Errorf("Expected zsh category description to be 'Install zsh and most common plugins', got '%s'", zshCategory.Description)
 	}
 
-	// Verify zsh category has the install_zsh action
-	if len(zshCategory.Actions) != 1 {
-		t.Fatalf("Expected 1 action in zsh category, got %d", len(zshCategory.Actions))
+	// Verify zsh category has both expected actions
+	if len(zshCategory.Actions) != 2 {
+		t.Fatalf("Expected 2 actions in zsh category, got %d", len(zshCategory.Actions))
 	}
 
-	installZshAction := zshCategory.Actions[0]
-	if installZshAction.ID != "install_zsh" {
-		t.Errorf("Expected action ID to be 'install_zsh', got '%s'", installZshAction.ID)
+	// Verify both actions are present
+	var installZshAction, setZshDefaultAction *actions.Action
+	for _, action := range zshCategory.Actions {
+		switch action.ID {
+		case "install_zsh":
+			installZshAction = action
+		case "set_zsh_default_shell":
+			setZshDefaultAction = action
+		}
+	}
+
+	if installZshAction == nil {
+		t.Error("install_zsh action not found in zsh category")
+	}
+	if setZshDefaultAction == nil {
+		t.Error("set_zsh_default_shell action not found in zsh category")
 	}
 
 	// Verify zsh category is hidden on Windows
