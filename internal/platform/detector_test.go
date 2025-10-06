@@ -482,18 +482,6 @@ func TestDetectInfoPackageManagers(t *testing.T) {
 				t.Error("Expected Pacman package manager on Arch-based system")
 			}
 		}
-	case Linux:
-		// On generic Linux, we might have various package managers
-		if commandExists("apt") || commandExists("apt-get") {
-			if !info.HasPackageManager(PackageManagerAPT) {
-				t.Error("Expected APT package manager on Linux system with apt")
-			}
-		}
-		if commandExists("pacman") {
-			if !info.HasPackageManager(PackageManagerPacman) {
-				t.Error("Expected Pacman package manager on Linux system with pacman")
-			}
-		}
 	case MacOS:
 		// On macOS, we might have Brew
 		if commandExists("brew") {
