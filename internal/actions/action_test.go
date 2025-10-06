@@ -268,23 +268,23 @@ func TestAction_GetPlatformCommand(t *testing.T) {
 			name: "command exists for platform",
 			action: Action{
 				PlatformCommands: map[Platform]PlatformCommand{
-					PlatformLinux: {Command: "apt update"},
-					PlatformMacOS: {Command: "brew update"},
+					PlatformLinux: {Command: "apt update", CheckCommand: "which apt"},
+					PlatformMacOS: {Command: "brew update", CheckCommand: "which brew"},
 				},
 			},
 			platform: PlatformLinux,
-			want:     PlatformCommand{Command: "apt update"},
+			want:     PlatformCommand{Command: "apt update", CheckCommand: "which apt"},
 			want1:    true,
 		},
 		{
 			name: "command does not exist for platform",
 			action: Action{
 				PlatformCommands: map[Platform]PlatformCommand{
-					PlatformLinux: {Command: "apt update"},
+					PlatformLinux: {Command: "apt update", CheckCommand: "which apt"},
 				},
 			},
 			platform: PlatformMacOS,
-			want:     PlatformCommand{Command: "", PackageSource: ""},
+			want:     PlatformCommand{Command: "", PackageSource: "", CheckCommand: ""},
 			want1:    false,
 		},
 		{
@@ -293,7 +293,7 @@ func TestAction_GetPlatformCommand(t *testing.T) {
 				PlatformCommands: map[Platform]PlatformCommand{},
 			},
 			platform: PlatformLinux,
-			want:     PlatformCommand{Command: "", PackageSource: ""},
+			want:     PlatformCommand{Command: "", PackageSource: "", CheckCommand: ""},
 			want1:    false,
 		},
 	}
@@ -322,8 +322,8 @@ func TestAction_HasCommandForPlatform(t *testing.T) {
 			name: "direct platform match",
 			action: Action{
 				PlatformCommands: map[Platform]PlatformCommand{
-					PlatformLinux: {Command: "apt update"},
-					PlatformMacOS: {Command: "brew update"},
+					PlatformLinux: {Command: "apt update", CheckCommand: "which apt"},
+					PlatformMacOS: {Command: "brew update", CheckCommand: "which brew"},
 				},
 			},
 			platform: PlatformLinux,
@@ -333,7 +333,7 @@ func TestAction_HasCommandForPlatform(t *testing.T) {
 			name: "debian falls back to linux",
 			action: Action{
 				PlatformCommands: map[Platform]PlatformCommand{
-					PlatformLinux: {Command: "apt update"},
+					PlatformLinux: {Command: "apt update", CheckCommand: "which apt"},
 				},
 			},
 			platform: PlatformDebian,
@@ -343,7 +343,7 @@ func TestAction_HasCommandForPlatform(t *testing.T) {
 			name: "arch falls back to linux",
 			action: Action{
 				PlatformCommands: map[Platform]PlatformCommand{
-					PlatformLinux: {Command: "pacman -Syu"},
+					PlatformLinux: {Command: "pacman -Syu", CheckCommand: "which pacman"},
 				},
 			},
 			platform: PlatformArch,
@@ -353,7 +353,7 @@ func TestAction_HasCommandForPlatform(t *testing.T) {
 			name: "fallback to PlatformAny",
 			action: Action{
 				PlatformCommands: map[Platform]PlatformCommand{
-					PlatformAny: {Command: "echo hello"},
+					PlatformAny: {Command: "echo hello", CheckCommand: "which echo"},
 				},
 			},
 			platform: PlatformWindows,
@@ -363,7 +363,7 @@ func TestAction_HasCommandForPlatform(t *testing.T) {
 			name: "no command for platform",
 			action: Action{
 				PlatformCommands: map[Platform]PlatformCommand{
-					PlatformMacOS: {Command: "brew update"},
+					PlatformMacOS: {Command: "brew update", CheckCommand: "which brew"},
 				},
 			},
 			platform: PlatformWindows,
@@ -477,6 +477,143 @@ func TestCategory_EdgeCases(t *testing.T) {
 	})
 }
 
+func TestAction_HasCheckCommand(t *testing.T) {
+	tests := []struct {
+		name     string
+		action   Action
+		platform Platform
+		want     bool
+	}{
+		{
+			name: "action with check command",
+			action: Action{
+				PlatformCommands: map[Platform]PlatformCommand{
+					PlatformLinux: {
+						Command:      "apt update",
+						CheckCommand: "which apt",
+					},
+				},
+			},
+			platform: PlatformLinux,
+			want:     true,
+		},
+		{
+			name: "action without check command",
+			action: Action{
+				PlatformCommands: map[Platform]PlatformCommand{
+					PlatformLinux: {
+						Command: "apt update",
+					},
+				},
+			},
+			platform: PlatformLinux,
+			want:     false,
+		},
+		{
+			name: "no platform command",
+			action: Action{
+				PlatformCommands: map[Platform]PlatformCommand{
+					PlatformMacOS: {
+						Command:      "brew update",
+						CheckCommand: "which brew",
+					},
+				},
+			},
+			platform: PlatformLinux,
+			want:     false,
+		},
+		{
+			name: "nil platform commands",
+			action: Action{
+				PlatformCommands: nil,
+			},
+			platform: PlatformLinux,
+			want:     false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.action.HasCheckCommand(tt.platform); got != tt.want {
+				t.Errorf("Action.HasCheckCommand() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestAction_GetCheckCommand(t *testing.T) {
+	tests := []struct {
+		name     string
+		action   Action
+		platform Platform
+		want     string
+		want1    bool
+	}{
+		{
+			name: "action with check command",
+			action: Action{
+				PlatformCommands: map[Platform]PlatformCommand{
+					PlatformLinux: {
+						Command:      "apt update",
+						CheckCommand: "which apt",
+					},
+				},
+			},
+			platform: PlatformLinux,
+			want:     "which apt",
+			want1:    true,
+		},
+		{
+			name: "action without check command",
+			action: Action{
+				PlatformCommands: map[Platform]PlatformCommand{
+					PlatformLinux: {
+						Command: "apt update",
+					},
+				},
+			},
+			platform: PlatformLinux,
+			want:     "",
+			want1:    false,
+		},
+		{
+			name: "no platform command",
+			action: Action{
+				PlatformCommands: map[Platform]PlatformCommand{
+					PlatformMacOS: {
+						Command:      "brew update",
+						CheckCommand: "which brew",
+					},
+				},
+			},
+			platform: PlatformLinux,
+			want:     "",
+			want1:    false,
+		},
+		{
+			name: "nil platform commands",
+			action: Action{
+				PlatformCommands: nil,
+			},
+			platform: PlatformLinux,
+			want:     "",
+			want1:    false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, got1 := tt.action.GetCheckCommand(tt.platform)
+			if got != tt.want {
+				t.Errorf("Action.GetCheckCommand() got = %v, want %v", got, tt.want)
+			}
+			if got1 != tt.want1 {
+				t.Errorf("Action.GetCheckCommand() got1 = %v, want %v", got1, tt.want1)
+			}
+		})
+	}
+}
+
 func TestAction_EdgeCases(t *testing.T) {
 	t.Run("nil hidden platforms", func(t *testing.T) {
 		action := Action{
@@ -498,8 +635,8 @@ func TestAction_EdgeCases(t *testing.T) {
 		if ok != false {
 			t.Errorf("Action.GetPlatformCommand() with nil PlatformCommands ok = %v, want %v", ok, false)
 		}
-		if got != (PlatformCommand{}) {
-			t.Errorf("Action.GetPlatformCommand() with nil PlatformCommands got = %v, want %v", got, PlatformCommand{})
+		if got != (PlatformCommand{Command: "", PackageSource: "", CheckCommand: ""}) {
+			t.Errorf("Action.GetPlatformCommand() with nil PlatformCommands got = %v, want %v", got, PlatformCommand{Command: "", PackageSource: "", CheckCommand: ""})
 		}
 	})
 }
