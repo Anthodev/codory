@@ -156,6 +156,106 @@ func TestAction_IsVisibleOnPlatform(t *testing.T) {
 	}
 }
 
+func TestCategory_IsHiddenOnPlatform(t *testing.T) {
+	tests := []struct {
+		name     string
+		category Category
+		platform Platform
+		want     bool
+	}{
+		{
+			name: "category hidden on platform",
+			category: Category{
+				HiddenOnPlatforms: []Platform{PlatformLinux, PlatformWindows},
+			},
+			platform: PlatformLinux,
+			want:     true,
+		},
+		{
+			name: "category not hidden on platform",
+			category: Category{
+				HiddenOnPlatforms: []Platform{PlatformWindows, PlatformMacOS},
+			},
+			platform: PlatformLinux,
+			want:     false,
+		},
+		{
+			name: "category with no hidden platforms",
+			category: Category{
+				HiddenOnPlatforms: []Platform{},
+			},
+			platform: PlatformLinux,
+			want:     false,
+		},
+		{
+			name: "category with nil hidden platforms",
+			category: Category{
+				HiddenOnPlatforms: nil,
+			},
+			platform: PlatformLinux,
+			want:     false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.category.IsHiddenOnPlatform(tt.platform); got != tt.want {
+				t.Errorf("Category.IsHiddenOnPlatform() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestAction_IsHiddenOnPlatform(t *testing.T) {
+	tests := []struct {
+		name     string
+		action   Action
+		platform Platform
+		want     bool
+	}{
+		{
+			name: "action hidden on platform",
+			action: Action{
+				HiddenOnPlatforms: []Platform{PlatformLinux, PlatformWindows},
+			},
+			platform: PlatformLinux,
+			want:     true,
+		},
+		{
+			name: "action not hidden on platform",
+			action: Action{
+				HiddenOnPlatforms: []Platform{PlatformWindows, PlatformMacOS},
+			},
+			platform: PlatformLinux,
+			want:     false,
+		},
+		{
+			name: "action with no hidden platforms",
+			action: Action{
+				HiddenOnPlatforms: []Platform{},
+			},
+			platform: PlatformLinux,
+			want:     false,
+		},
+		{
+			name: "action with nil hidden platforms",
+			action: Action{
+				HiddenOnPlatforms: nil,
+			},
+			platform: PlatformLinux,
+			want:     false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.action.IsHiddenOnPlatform(tt.platform); got != tt.want {
+				t.Errorf("Action.IsHiddenOnPlatform() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestAction_GetPlatformCommand(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -184,7 +284,7 @@ func TestAction_GetPlatformCommand(t *testing.T) {
 				},
 			},
 			platform: PlatformMacOS,
-			want:     PlatformCommand{},
+			want:     PlatformCommand{Command: "", PackageSource: ""},
 			want1:    false,
 		},
 		{
@@ -193,7 +293,7 @@ func TestAction_GetPlatformCommand(t *testing.T) {
 				PlatformCommands: map[Platform]PlatformCommand{},
 			},
 			platform: PlatformLinux,
-			want:     PlatformCommand{},
+			want:     PlatformCommand{Command: "", PackageSource: ""},
 			want1:    false,
 		},
 	}
@@ -294,4 +394,112 @@ func TestAction_HasCommandForPlatform(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestActionArgument(t *testing.T) {
+	tests := []struct {
+		name     string
+		argument ActionArgument
+		want     struct {
+			name        string
+			description string
+			required    bool
+		}
+	}{
+		{
+			name: "required argument",
+			argument: ActionArgument{
+				Name:        "package",
+				Description: "Package name to install",
+				Required:    true,
+			},
+			want: struct {
+				name        string
+				description string
+				required    bool
+			}{
+				name:        "package",
+				description: "Package name to install",
+				required:    true,
+			},
+		},
+		{
+			name: "optional argument",
+			argument: ActionArgument{
+				Name:        "verbose",
+				Description: "Enable verbose output",
+				Required:    false,
+			},
+			want: struct {
+				name        string
+				description string
+				required    bool
+			}{
+				name:        "verbose",
+				description: "Enable verbose output",
+				required:    false,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.argument.Name; got != tt.want.name {
+				t.Errorf("ActionArgument.Name = %v, want %v", got, tt.want.name)
+			}
+			if got := tt.argument.Description; got != tt.want.description {
+				t.Errorf("ActionArgument.Description = %v, want %v", got, tt.want.description)
+			}
+			if got := tt.argument.Required; got != tt.want.required {
+				t.Errorf("ActionArgument.Required = %v, want %v", got, tt.want.required)
+			}
+		})
+	}
+}
+
+func TestCategory_EdgeCases(t *testing.T) {
+	t.Run("nil subcategories", func(t *testing.T) {
+		category := Category{
+			SubCategories: nil,
+		}
+		if got := category.IsLeaf(); got != true {
+			t.Errorf("Category.IsLeaf() with nil SubCategories = %v, want %v", got, true)
+		}
+	})
+
+	t.Run("nil actions", func(t *testing.T) {
+		category := Category{
+			Actions: nil,
+		}
+		if got := category.HasActions(); got != false {
+			t.Errorf("Category.HasActions() with nil Actions = %v, want %v", got, false)
+		}
+	})
+}
+
+func TestAction_EdgeCases(t *testing.T) {
+	t.Run("nil hidden platforms", func(t *testing.T) {
+		action := Action{
+			HiddenOnPlatforms: nil,
+		}
+		if got := action.IsVisibleOnPlatform(PlatformLinux); got != true {
+			t.Errorf("Action.IsVisibleOnPlatform() with nil HiddenOnPlatforms = %v, want %v", got, true)
+		}
+		if got := action.IsHiddenOnPlatform(PlatformLinux); got != false {
+			t.Errorf("Action.IsHiddenOnPlatform() with nil HiddenOnPlatforms = %v, want %v", got, false)
+		}
+	})
+
+	t.Run("nil platform commands", func(t *testing.T) {
+		action := Action{
+			PlatformCommands: nil,
+		}
+		got, ok := action.GetPlatformCommand(PlatformLinux)
+		if ok != false {
+			t.Errorf("Action.GetPlatformCommand() with nil PlatformCommands ok = %v, want %v", ok, false)
+		}
+		if got != (PlatformCommand{}) {
+			t.Errorf("Action.GetPlatformCommand() with nil PlatformCommands got = %v, want %v", got, PlatformCommand{})
+		}
+	})
 }

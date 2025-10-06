@@ -7,6 +7,10 @@ import (
 )
 
 func TestInit(t *testing.T) {
+	// Set test mode to prevent actual system operations
+	SetTestMode(true)
+	defer SetTestMode(false)
+
 	globalRegistry := actions.GlobalRegistry()
 
 	packageManagersCategory, exists := globalRegistry.GetCategory("package_managers")
@@ -15,89 +19,139 @@ func TestInit(t *testing.T) {
 	}
 
 	// Verify package_managers category properties
-	if packageManagersCategory.ID != "package_managers" {
-		t.Errorf("Expected package_managers category ID to be 'package_managers', got '%s'", packageManagersCategory.ID)
+	tests := []struct {
+		name     string
+		expected string
+		actual   string
+	}{
+		{
+			name:     "category ID",
+			expected: "package_managers",
+			actual:   packageManagersCategory.ID,
+		},
+		{
+			name:     "category name",
+			expected: "Package Managers",
+			actual:   packageManagersCategory.Name,
+		},
+		{
+			name:     "category description",
+			expected: "Tools and utilities specific to Linux",
+			actual:   packageManagersCategory.Description,
+		},
 	}
 
-	if packageManagersCategory.Name != "Package Managers" {
-		t.Errorf("Expected package_managers category name to be 'Package Managers', got '%s'", packageManagersCategory.Name)
+	for _, tt := range tests {
+		t.Run("Category_"+tt.name, func(t *testing.T) {
+			if tt.actual != tt.expected {
+				t.Errorf("Expected %s to be '%s', got '%s'", tt.name, tt.expected, tt.actual)
+			}
+		})
 	}
 
-	if packageManagersCategory.Description != "Tools and utilities specific to Linux" {
-		t.Errorf("Expected package_managers category description to be 'Tools and utilities specific to Linux', got '%s'", packageManagersCategory.Description)
+	// Check if all actions are registered
+	expectedActions := 3
+	if len(packageManagersCategory.Actions) != expectedActions {
+		t.Fatalf("Expected %d actions in package_managers category, got %d", expectedActions, len(packageManagersCategory.Actions))
 	}
 
-	// Check if both actions are registered
-	if len(packageManagersCategory.Actions) != 2 {
-		t.Fatalf("Expected 2 actions in package_managers category, got %d", len(packageManagersCategory.Actions))
-	}
-
-	var installYayAction *actions.Action
-	var installBrewAction *actions.Action
-	for _, action := range packageManagersCategory.Actions {
-		if action.ID == "install_yay" {
-			installYayAction = action
-		} else if action.ID == "install_brew" {
-			installBrewAction = action
+	// Test individual action properties using table-driven approach
+	actionTests := []struct {
+		name                string
+		actionID            string
+		expectedName        string
+		expectedDescription string
+		expectedType        actions.ActionType
+		expectedPlatforms   struct {
+			visible []actions.Platform
+			hidden  []actions.Platform
 		}
+	}{
+		{
+			name:                "InstallYay",
+			actionID:            "install_yay",
+			expectedName:        "Install Yay (AUR Helper)",
+			expectedDescription: "Install Yay AUR helper for Arch Linux",
+			expectedType:        actions.ActionTypeFunction,
+			expectedPlatforms: struct {
+				visible []actions.Platform
+				hidden  []actions.Platform
+			}{
+				visible: []actions.Platform{actions.PlatformArch},
+				hidden:  nil,
+			},
+		},
+		{
+			name:                "InstallBrew",
+			actionID:            "install_brew",
+			expectedName:        "Install Homebrew",
+			expectedDescription: "Install Homebrew on the system",
+			expectedType:        actions.ActionTypeFunction,
+			expectedPlatforms: struct {
+				visible []actions.Platform
+				hidden  []actions.Platform
+			}{
+				visible: nil,
+				hidden:  []actions.Platform{actions.PlatformWindows},
+			},
+		},
+		{
+			name:                "CheckWinget",
+			actionID:            "check_winget",
+			expectedName:        "Check Winget",
+			expectedDescription: "Check if Winget is installed and show installation instructions if not installed",
+			expectedType:        actions.ActionTypeFunction,
+			expectedPlatforms: struct {
+				visible []actions.Platform
+				hidden  []actions.Platform
+			}{
+				visible: []actions.Platform{actions.PlatformWindows},
+				hidden:  nil,
+			},
+		},
 	}
 
-	if installYayAction == nil {
-		t.Fatal("InstallYay action not found in package_managers category")
-	}
+	for _, tt := range actionTests {
+		t.Run(tt.name, func(t *testing.T) {
+			action := findActionByID(packageManagersCategory.Actions, tt.actionID)
+			if action == nil {
+				t.Fatalf("%s action not found in package_managers category", tt.name)
+			}
 
-	if installBrewAction == nil {
-		t.Fatal("InstallBrew action not found in package_managers category")
-	}
+			// Test basic properties
+			if action.Name != tt.expectedName {
+				t.Errorf("Expected %s action name to be '%s', got '%s'", tt.name, tt.expectedName, action.Name)
+			}
 
-	// Test InstallYay action properties
-	if installYayAction.Name != "Install Yay (AUR Helper)" {
-		t.Errorf("Expected InstallYay action name to be 'Install Yay (AUR Helper)', got '%s'", installYayAction.Name)
-	}
+			if action.Description != tt.expectedDescription {
+				t.Errorf("Expected %s action description to be '%s', got '%s'", tt.name, tt.expectedDescription, action.Description)
+			}
 
-	if installYayAction.Description != "Install Yay AUR helper for Arch Linux" {
-		t.Errorf("Expected InstallYay action description to be 'Install Yay AUR helper for Arch Linux', got '%s'", installYayAction.Description)
-	}
+			if action.Type != tt.expectedType {
+				t.Errorf("Expected %s action type to be '%s', got '%s'", tt.name, tt.expectedType, action.Type)
+			}
 
-	if installYayAction.Type != actions.ActionTypeFunction {
-		t.Errorf("Expected InstallYay action type to be 'function', got '%s'", installYayAction.Type)
-	}
+			if action.Handler == nil {
+				t.Errorf("%s action has no handler", tt.name)
+			}
 
-	if installYayAction.Handler == nil {
-		t.Error("InstallYay action has no handler")
-	}
+			// Test platform visibility
+			if tt.expectedPlatforms.visible != nil {
+				if len(action.VisibleOnPlatforms) != len(tt.expectedPlatforms.visible) {
+					t.Errorf("Expected %d visible platforms for %s, got %d", len(tt.expectedPlatforms.visible), tt.name, len(action.VisibleOnPlatforms))
+				} else if len(action.VisibleOnPlatforms) > 0 && action.VisibleOnPlatforms[0] != tt.expectedPlatforms.visible[0] {
+					t.Errorf("Expected %s action to be visible on '%s' platform, got '%s'", tt.name, tt.expectedPlatforms.visible[0], action.VisibleOnPlatforms[0])
+				}
+			}
 
-	if len(installYayAction.VisibleOnPlatforms) != 1 {
-		t.Fatalf("Expected 1 visible platform for InstallYay, got %d", len(installYayAction.VisibleOnPlatforms))
-	}
-
-	if installYayAction.VisibleOnPlatforms[0] != actions.PlatformArch {
-		t.Errorf("Expected InstallYay action to be visible on 'arch' platform, got '%s'", installYayAction.VisibleOnPlatforms[0])
-	}
-
-	// Test InstallBrew action properties
-	if installBrewAction.Name != "Install Homebrew" {
-		t.Errorf("Expected InstallBrew action name to be 'Install Homebrew', got '%s'", installBrewAction.Name)
-	}
-
-	if installBrewAction.Description != "Install Homebrew on the system" {
-		t.Errorf("Expected InstallBrew action description to be 'Install Homebrew on the system', got '%s'", installBrewAction.Description)
-	}
-
-	if installBrewAction.Type != actions.ActionTypeFunction {
-		t.Errorf("Expected InstallBrew action type to be 'function', got '%s'", installBrewAction.Type)
-	}
-
-	if installBrewAction.Handler == nil {
-		t.Error("InstallBrew action has no handler")
-	}
-
-	if len(installBrewAction.HiddenOnPlatforms) != 1 {
-		t.Fatalf("Expected 1 hidden platform for InstallBrew, got %d", len(installBrewAction.HiddenOnPlatforms))
-	}
-
-	if installBrewAction.HiddenOnPlatforms[0] != actions.PlatformWindows {
-		t.Errorf("Expected InstallBrew action to be hidden on 'windows' platform, got '%s'", installBrewAction.HiddenOnPlatforms[0])
+			if tt.expectedPlatforms.hidden != nil {
+				if len(action.HiddenOnPlatforms) != len(tt.expectedPlatforms.hidden) {
+					t.Errorf("Expected %d hidden platforms for %s, got %d", len(tt.expectedPlatforms.hidden), tt.name, len(action.HiddenOnPlatforms))
+				} else if len(action.HiddenOnPlatforms) > 0 && action.HiddenOnPlatforms[0] != tt.expectedPlatforms.hidden[0] {
+					t.Errorf("Expected %s action to be hidden on '%s' platform, got '%s'", tt.name, tt.expectedPlatforms.hidden[0], action.HiddenOnPlatforms[0])
+				}
+			}
+		})
 	}
 }
 
@@ -132,18 +186,44 @@ func TestPackageManagersCategoryActionsAreProperlyRegistered(t *testing.T) {
 		t.Fatal("Package Managers category not found")
 	}
 
+	// Test all actions are properly registered with required fields
 	for _, action := range packageManagersCategory.Actions {
-		if action.ID == "" {
-			t.Error("Action ID is empty")
-		}
-		if action.Name == "" {
-			t.Errorf("Action name is empty for ID: %s", action.ID)
-		}
-		if action.Type == "" {
-			t.Errorf("Action type is empty for ID: %s", action.ID)
-		}
-		if action.Type == actions.ActionTypeFunction && action.Handler == nil {
-			t.Errorf("Function action has no handler for ID: %s", action.ID)
+		t.Run("Action_"+action.ID, func(t *testing.T) {
+			if action.ID == "" {
+				t.Error("Action ID is empty")
+			}
+			if action.Name == "" {
+				t.Errorf("Action name is empty for ID: %s", action.ID)
+			}
+			if action.Type == "" {
+				t.Errorf("Action type is empty for ID: %s", action.ID)
+			}
+			if action.Type == actions.ActionTypeFunction && action.Handler == nil {
+				t.Errorf("Function action has no handler for ID: %s", action.ID)
+			}
+		})
+	}
+}
+
+func TestTestModeFunctionality(t *testing.T) {
+	// Test that test mode can be set and unset
+	SetTestMode(true)
+	if !testMode {
+		t.Error("Test mode should be true after setting")
+	}
+
+	SetTestMode(false)
+	if testMode {
+		t.Error("Test mode should be false after unsetting")
+	}
+}
+
+// Helper function to find an action by ID in a slice of actions
+func findActionByID(actions []*actions.Action, id string) *actions.Action {
+	for _, action := range actions {
+		if action.ID == id {
+			return action
 		}
 	}
+	return nil
 }

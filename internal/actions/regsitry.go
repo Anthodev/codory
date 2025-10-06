@@ -2,6 +2,7 @@ package actions
 
 import (
 	"fmt"
+	"slices"
 	"sync"
 )
 
@@ -101,9 +102,22 @@ func (c *Category) GetVisibleSubCategories(platform Platform) []*Category {
 func (c *Category) GetVisibleActions(platform Platform) []*Action {
 	visible := make([]*Action, 0)
 	for _, action := range c.Actions {
-		if action.IsVisibleOnPlatform(platform) {
-			visible = append(visible, action)
+		if action.IsHiddenOnPlatform(platform) {
+			continue
+		}
+
+		if len(action.VisibleOnPlatforms) > 0 {
+			// Action has specific platforms where it should be visible
+			if slices.Contains(action.VisibleOnPlatforms, platform) ||
+				slices.Contains(action.VisibleOnPlatforms, PlatformAny) {
+				visible = append(visible, action)
+			}
+		} else {
+			if action.IsVisibleOnPlatform(platform) || action.IsVisibleOnPlatform(PlatformAny) {
+				visible = append(visible, action)
+			}
 		}
 	}
+
 	return visible
 }

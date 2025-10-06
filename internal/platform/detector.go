@@ -135,6 +135,12 @@ func IsBrewInstalled() bool {
 	return commandExists("brew")
 }
 
+// IsWingetInstalled is a variable holding the function to check if winget is installed.
+// This allows for easier testing by mocking this function.
+var IsWingetInstalled = func() bool {
+	return commandExists("winget")
+}
+
 func fileExists(path string) bool {
 	cmd := exec.Command("test", "-f", path)
 	return cmd.Run() == nil

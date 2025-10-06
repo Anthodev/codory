@@ -54,7 +54,7 @@ type Action struct {
 	PlatformCommands map[Platform]PlatformCommand
 
 	VisibleOnPlatforms []Platform
-	HiddenOnPlatforms []Platform
+	HiddenOnPlatforms  []Platform
 }
 
 type ActionArgument struct {
@@ -96,6 +96,16 @@ func (c *Category) IsVisibleOnPlatform(platform Platform) bool {
 // IsVisibleOnPlatform checks if the action is visible on a platform
 func (a *Action) IsVisibleOnPlatform(platform Platform) bool {
 	return !slices.Contains(a.HiddenOnPlatforms, platform)
+}
+
+// IsHiddenOnPlatform checks if the action is hidden on a platform
+func (a *Action) IsHiddenOnPlatform(platform Platform) bool {
+	return slices.Contains(a.HiddenOnPlatforms, platform)
+}
+
+// IsHiddenOnPlatform checks if the category is hidden on a platform
+func (c *Category) IsHiddenOnPlatform(platform Platform) bool {
+	return slices.Contains(c.HiddenOnPlatforms, platform)
 }
 
 // GetPlatformCommand returns the command for a platform
