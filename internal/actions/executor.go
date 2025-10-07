@@ -72,6 +72,19 @@ func (e *Executor) executeCommand(ctx context.Context, action *Action) (string, 
 
 	// Execute the command
 	cmdStr := platformCmd.Command
+
+	// Check if the command contains shell special characters that require shell execution
+	if strings.Contains(cmdStr, "$") || strings.Contains(cmdStr, "|") || strings.Contains(cmdStr, "&&") || strings.Contains(cmdStr, "||") || strings.Contains(cmdStr, ";") {
+		// Use shell to execute complex commands
+		cmd := exec.CommandContext(ctx, "sh", "-c", cmdStr)
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			return string(output), fmt.Errorf("command failed: %w\n%s", err, output)
+		}
+		return string(output), nil
+	}
+
+	// For simple commands, use the original logic
 	parts := strings.Fields(cmdStr)
 	if len(parts) == 0 {
 		return "", fmt.Errorf("empty command")
@@ -128,6 +141,15 @@ func (e *Executor) GetPlatformInfo() platform.Info {
 }
 
 func commandExists(cmd string) bool {
-	_, err := exec.LookPath(cmd)
+	// First try to find it as a binary in PATH
+	if _, err := exec.LookPath(cmd); err == nil {
+		return true
+	}
+
+	// If that fails, try to execute it as a shell command
+	// This handles cases like "test -d /path" or complex checks
+	ctx := context.Background()
+	command := exec.CommandContext(ctx, "sh", "-c", cmd)
+	err := command.Run()
 	return err == nil
 }
