@@ -18,6 +18,7 @@ func SetTestMode(enabled bool) {
 type Platform string
 
 const (
+	Linux   Platform = "linux"
 	Debian  Platform = "debian"
 	Arch    Platform = "arch"
 	MacOS   Platform = "macos"
@@ -74,6 +75,10 @@ func detectLinuxDistro() Platform {
 		return Arch
 	}
 
+	if commandExists("uname") {
+		return Linux
+	}
+
 	return Unknown
 }
 
@@ -110,7 +115,7 @@ func DetectInfo() Info {
 		}
 	}
 
-	if info.OS == Debian || info.OS == Arch {
+	if info.OS == Linux || info.OS == Debian || info.OS == Arch {
 		if commandExists("brew") {
 			info.PackageManagers = append(info.PackageManagers, PackageManagerBrew)
 		}
@@ -157,10 +162,12 @@ func (p Platform) String() string {
 
 func (p Platform) DisplayName() string {
 	switch p {
+	case Linux:
+		return "Linux"
 	case Debian:
-		return "Debian/Ubuntu"
+		return "Debian/Ubuntu and derivatives"
 	case Arch:
-		return "Arch Linux"
+		return "Arch Linux and derivatives"
 	case MacOS:
 		return "macOS"
 	case Windows:

@@ -3,6 +3,7 @@ package platform
 import (
 	"os"
 	"runtime"
+	"slices"
 	"testing"
 )
 
@@ -16,7 +17,7 @@ func TestDetect(t *testing.T) {
 		{
 			name:     "linux platform",
 			goos:     "linux",
-			expected: []Platform{Debian, Arch, Unknown},
+			expected: []Platform{Debian, Arch, Linux, Unknown},
 		},
 		{
 			name:     "darwin platform",
@@ -44,13 +45,7 @@ func TestDetect(t *testing.T) {
 
 			got := Detect()
 
-			found := false
-			for _, expected := range tt.expected {
-				if got == expected {
-					found = true
-					break
-				}
-			}
+			found := slices.Contains(tt.expected, got)
 
 			if !found {
 				t.Errorf("Detect() = %v, want one of %v for %s", got, tt.expected, tt.goos)
@@ -142,6 +137,11 @@ func TestPlatform_String(t *testing.T) {
 			want:     "windows",
 		},
 		{
+			name:     "linux platform",
+			platform: Linux,
+			want:     "linux",
+		},
+		{
 			name:     "unknown platform",
 			platform: Unknown,
 			want:     "unknown",
@@ -177,12 +177,12 @@ func TestPlatform_DisplayName(t *testing.T) {
 		{
 			name:     "debian platform",
 			platform: Debian,
-			want:     "Debian/Ubuntu",
+			want:     "Debian/Ubuntu and derivatives",
 		},
 		{
 			name:     "arch platform",
 			platform: Arch,
-			want:     "Arch Linux",
+			want:     "Arch Linux and derivatives",
 		},
 		{
 			name:     "macos platform",
@@ -193,6 +193,11 @@ func TestPlatform_DisplayName(t *testing.T) {
 			name:     "windows platform",
 			platform: Windows,
 			want:     "Windows",
+		},
+		{
+			name:     "linux platform",
+			platform: Linux,
+			want:     "Linux",
 		},
 		{
 			name:     "unknown platform",
@@ -353,15 +358,9 @@ func TestDetectLinuxDistro(t *testing.T) {
 
 	result := detectLinuxDistro()
 
-	// On Linux, we expect either Debian, Arch, or Unknown
-	validPlatforms := []Platform{Debian, Arch, Unknown}
-	found := false
-	for _, valid := range validPlatforms {
-		if result == valid {
-			found = true
-			break
-		}
-	}
+	// On Linux, we expect either Debian, Arch, Linux, or Unknown
+	validPlatforms := []Platform{Debian, Arch, Linux, Unknown}
+	found := slices.Contains(validPlatforms, result)
 
 	if !found {
 		t.Errorf("detectLinuxDistro() = %v, want one of %v", result, validPlatforms)
@@ -500,7 +499,7 @@ func TestDetectInfoPackageManagers(t *testing.T) {
 	}
 
 	// Test that Brew can be detected on Linux systems too
-	if info.OS == Debian || info.OS == Arch {
+	if info.OS == Debian || info.OS == Arch || info.OS == Linux {
 		if commandExists("brew") {
 			if !info.HasPackageManager(PackageManagerBrew) {
 				t.Error("Expected Brew package manager to be detected on Linux if installed")
@@ -532,7 +531,6 @@ func BenchmarkHasPackageManager(b *testing.B) {
 		PackageManagers: []PackageManager{PackageManagerAPT, PackageManagerPacman, PackageManagerYay, PackageManagerBrew},
 	}
 
-	
 	for b.Loop() {
 		_ = info.HasPackageManager(PackageManagerAPT)
 	}

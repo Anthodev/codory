@@ -21,7 +21,7 @@ func NewCheckWingetAction() *actions.Action {
 }
 
 func checkWinget(ctx context.Context) (string, error) {
-	if err := validateCheckWinget(ctx); err != nil {
+	if err := validateCheckWinget(); err != nil {
 		return "", err
 	}
 
@@ -34,7 +34,7 @@ func checkWinget(ctx context.Context) (string, error) {
 	return "Winget is installed and working correctly!", nil
 }
 
-func validateCheckWinget(ctx context.Context) error {
+func validateCheckWinget() error {
 	if platform.Detect() != platform.Windows {
 		return fmt.Errorf("winget is not supported on this platform")
 	}
