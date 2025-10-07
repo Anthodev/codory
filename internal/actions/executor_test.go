@@ -2,61 +2,68 @@ package actions
 
 import (
 	"context"
+	"errors"
 	"os"
+	"strings"
 	"testing"
 
 	"anthodev/codory/internal/platform"
 )
 
-// Mock platform info for testing
-func createMockPlatformInfo(os platform.Platform) platform.Info {
+// Test constants
+const (
+	testEnvVar   = "CODORY_TEST"
+	testEnvValue = "1"
+)
+
+// setupTestEnvironment configures the test environment with proper cleanup
+func setupTestEnvironment(t *testing.T) func() {
+	t.Helper()
+
+	// Set test mode
+	platform.SetTestMode(true)
+	os.Setenv(testEnvVar, testEnvValue)
+
+	// Return cleanup function
+	return func() {
+		platform.SetTestMode(false)
+		os.Unsetenv(testEnvVar)
+	}
+}
+
+// createTestPlatform creates platform info for testing
+func createTestPlatform(os platform.Platform) platform.Info {
 	return platform.Info{
 		OS:              os,
 		PackageManagers: []platform.PackageManager{},
 	}
 }
 
-// SetTestMode sets the test mode for the platform package
-func setPlatformTestMode(enabled bool) {
-	platform.SetTestMode(enabled)
-}
-
-// Helper function to create test platform info
-func createTestPlatformInfo(os platform.Platform) platform.Info {
-	return platform.Info{
-		OS:              os,
-		PackageManagers: []platform.PackageManager{},
-	}
-}
-
+// TestNewExecutor verifies executor creation
 func TestNewExecutor(t *testing.T) {
-	// Ensure we're in test mode
-	setPlatformTestMode(true)
-	defer setPlatformTestMode(false)
-	os.Setenv("CODORY_TEST", "1")
-	defer os.Unsetenv("CODORY_TEST")
+	cleanup := setupTestEnvironment(t)
+	defer cleanup()
 
 	executor := NewExecutor()
+
 	if executor == nil {
 		t.Fatal("NewExecutor() returned nil")
 	}
 	if executor.platformInfo.OS == "" {
-		t.Error("Expected platform info to be set")
+		t.Error("expected platform info to be set")
 	}
 	if executor.yayInstaller == nil {
-		t.Error("Expected yayInstaller to be set")
+		t.Error("expected yayInstaller to be set")
 	}
 	if executor.brewInstaller == nil {
-		t.Error("Expected brewInstaller to be set")
+		t.Error("expected brewInstaller to be set")
 	}
 }
 
+// TestExecutor_Execute tests the main Execute method
 func TestExecutor_Execute(t *testing.T) {
-	// Ensure we're in test mode
-	setPlatformTestMode(true)
-	defer setPlatformTestMode(false)
-	os.Setenv("CODORY_TEST", "1")
-	defer os.Unsetenv("CODORY_TEST")
+	cleanup := setupTestEnvironment(t)
+	defer cleanup()
 
 	tests := []struct {
 		name        string
@@ -87,6 +94,18 @@ func TestExecutor_Execute(t *testing.T) {
 			errContains: "no handler defined",
 		},
 		{
+			name: "function action with error",
+			action: &Action{
+				ID:   "test-function-error",
+				Type: ActionTypeFunction,
+				Handler: func(ctx context.Context) (string, error) {
+					return "", errors.New("handler error")
+				},
+			},
+			wantErr:     true,
+			errContains: "handler error",
+		},
+		{
 			name: "unknown action type",
 			action: &Action{
 				ID:   "test-unknown",
@@ -94,18 +113,6 @@ func TestExecutor_Execute(t *testing.T) {
 			},
 			wantErr:     true,
 			errContains: "unknown action type",
-		},
-		{
-			name: "function action with error",
-			action: &Action{
-				ID:   "test-function-error",
-				Type: ActionTypeFunction,
-				Handler: func(ctx context.Context) (string, error) {
-					return "", context.DeadlineExceeded
-				},
-			},
-			wantErr:     true,
-			errContains: "context deadline exceeded",
 		},
 	}
 
@@ -118,46 +125,45 @@ func TestExecutor_Execute(t *testing.T) {
 
 			if tt.wantErr {
 				if err == nil {
-					t.Errorf("Expected error but got none")
-				} else if tt.errContains != "" && !contains(err.Error(), tt.errContains) {
-					t.Errorf("Expected error to contain '%s', got '%s'", tt.errContains, err.Error())
+					t.Errorf("expected error but got none")
+				} else if tt.errContains != "" && !strings.Contains(err.Error(), tt.errContains) {
+					t.Errorf("expected error to contain %q, got %q", tt.errContains, err.Error())
 				}
 			} else {
 				if err != nil {
-					t.Errorf("Unexpected error: %v", err)
+					t.Errorf("unexpected error: %v", err)
 				}
-				if tt.wantResult != "" && result != tt.wantResult {
-					t.Errorf("Expected '%s', got '%s'", tt.wantResult, result)
+				if result != tt.wantResult {
+					t.Errorf("expected result %q, got %q", tt.wantResult, result)
 				}
 			}
 		})
 	}
 }
 
-func TestExecutor_executeCommand(t *testing.T) {
-	// Ensure we're in test mode
-	setPlatformTestMode(true)
-	defer setPlatformTestMode(false)
-	os.Setenv("CODORY_TEST", "1")
-	defer os.Unsetenv("CODORY_TEST")
+// TestExecutor_ExecuteCommand tests command execution
+func TestExecutor_ExecuteCommand(t *testing.T) {
+	cleanup := setupTestEnvironment(t)
+	defer cleanup()
 
 	tests := []struct {
 		name        string
 		action      *Action
-		mockOS      Platform
+		mockOS      platform.Platform
 		wantErr     bool
 		errContains string
+		shouldSkip  bool // indicates if command should be skipped due to checkCommand
 	}{
 		{
-			name: "command for specific platform",
+			name: "simple command execution",
 			action: &Action{
-				ID:   "test-command",
+				ID:   "test-simple-command",
 				Type: ActionTypeCommand,
 				PlatformCommands: map[Platform]PlatformCommand{
 					PlatformLinux: {Command: "echo test"},
 				},
 			},
-			mockOS:  PlatformLinux,
+			mockOS:  platform.Linux,
 			wantErr: false,
 		},
 		{
@@ -169,7 +175,7 @@ func TestExecutor_executeCommand(t *testing.T) {
 					PlatformAny: {Command: "echo test"},
 				},
 			},
-			mockOS:  PlatformLinux,
+			mockOS:  platform.Linux,
 			wantErr: false,
 		},
 		{
@@ -181,7 +187,7 @@ func TestExecutor_executeCommand(t *testing.T) {
 					PlatformMacOS: {Command: "echo test"},
 				},
 			},
-			mockOS:      PlatformLinux,
+			mockOS:      platform.Linux,
 			wantErr:     true,
 			errContains: "no command defined for platform",
 		},
@@ -194,24 +200,9 @@ func TestExecutor_executeCommand(t *testing.T) {
 					PlatformLinux: {Command: ""},
 				},
 			},
-			mockOS:      PlatformLinux,
+			mockOS:      platform.Linux,
 			wantErr:     true,
 			errContains: "empty command",
-		},
-		{
-			name: "command with package source",
-			action: &Action{
-				ID:   "test-command-package-source",
-				Type: ActionTypeCommand,
-				PlatformCommands: map[Platform]PlatformCommand{
-					PlatformLinux: {
-						Command:       "echo test",
-						PackageSource: PackageSourceOfficial,
-					},
-				},
-			},
-			mockOS:  PlatformLinux,
-			wantErr: false,
 		},
 		{
 			name: "command that fails",
@@ -222,7 +213,7 @@ func TestExecutor_executeCommand(t *testing.T) {
 					PlatformLinux: {Command: "false"},
 				},
 			},
-			mockOS:      PlatformLinux,
+			mockOS:      platform.Linux,
 			wantErr:     true,
 			errContains: "command failed",
 		},
@@ -238,34 +229,48 @@ func TestExecutor_executeCommand(t *testing.T) {
 					},
 				},
 			},
-			mockOS:  PlatformLinux,
-			wantErr: false,
+			mockOS:     platform.Linux,
+			wantErr:    false,
+			shouldSkip: true,
 		},
 		{
-			name: "command with check command - not exists",
+			name: "complex shell command with pipe",
 			action: &Action{
-				ID:   "test-check-command-not-exists",
+				ID:   "test-complex-pipe",
 				Type: ActionTypeCommand,
 				PlatformCommands: map[Platform]PlatformCommand{
 					PlatformLinux: {
-						Command:      "echo test",
-						CheckCommand: "nonexistentcommand12345",
+						Command: "echo hello | grep hello",
 					},
 				},
 			},
-			mockOS:  PlatformLinux,
+			mockOS:  platform.Linux,
+			wantErr: false,
+		},
+		{
+			name: "complex shell command with variable expansion",
+			action: &Action{
+				ID:   "test-complex-variable",
+				Type: ActionTypeCommand,
+				PlatformCommands: map[Platform]PlatformCommand{
+					PlatformLinux: {
+						Command: "echo $HOME",
+					},
+				},
+			},
+			mockOS:  platform.Linux,
 			wantErr: false,
 		},
 		{
 			name: "command with PlatformLinux fallback for Debian",
 			action: &Action{
-				ID:   "test-command-linux-fallback",
+				ID:   "test-command-linux-fallback-debian",
 				Type: ActionTypeCommand,
 				PlatformCommands: map[Platform]PlatformCommand{
 					PlatformLinux: {Command: "echo linux fallback"},
 				},
 			},
-			mockOS:  PlatformDebian,
+			mockOS:  platform.Debian,
 			wantErr: false,
 		},
 		{
@@ -277,7 +282,7 @@ func TestExecutor_executeCommand(t *testing.T) {
 					PlatformLinux: {Command: "echo linux fallback arch"},
 				},
 			},
-			mockOS:  PlatformArch,
+			mockOS:  platform.Arch,
 			wantErr: false,
 		},
 	}
@@ -285,60 +290,121 @@ func TestExecutor_executeCommand(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			executor := &Executor{
-				platformInfo: createTestPlatformInfo(platform.Platform(tt.mockOS)),
+				platformInfo: createTestPlatform(tt.mockOS),
 			}
 
 			result, err := executor.executeCommand(context.Background(), tt.action)
 
 			if tt.wantErr {
 				if err == nil {
-					t.Errorf("Expected error but got none")
-				} else if tt.errContains != "" && !contains(err.Error(), tt.errContains) {
-					t.Errorf("Expected error to contain '%s', got '%s'", tt.errContains, err.Error())
+					t.Errorf("expected error but got none")
+				} else if tt.errContains != "" && !strings.Contains(err.Error(), tt.errContains) {
+					t.Errorf("expected error to contain %q, got %q", tt.errContains, err.Error())
 				}
 			} else {
 				if err != nil {
-					t.Errorf("Unexpected error: %v", err)
+					t.Errorf("unexpected error: %v", err)
 				}
 				if result == "" {
-					t.Error("Expected non-empty result")
-				} else if tt.name == "command with check command - exists" && result != "Command already exists, skipping installation" {
-					t.Errorf("Expected skip message, got '%s'", result)
+					t.Error("expected non-empty result")
+				} else if tt.shouldSkip && result != "Command already exists, skipping installation" {
+					t.Errorf("expected skip message, got %q", result)
 				}
 			}
 		})
 	}
 }
 
-func TestExecutor_GetPlatformInfo(t *testing.T) {
-	// Ensure we're in test mode
-	setPlatformTestMode(true)
-	defer setPlatformTestMode(false)
-	os.Setenv("CODORY_TEST", "1")
-	defer os.Unsetenv("CODORY_TEST")
+// TestExecutor_ComplexShellCommands tests complex shell command execution
+func TestExecutor_ComplexShellCommands(t *testing.T) {
+	cleanup := setupTestEnvironment(t)
+	defer cleanup()
 
-	executor := NewExecutor()
-	info := executor.GetPlatformInfo()
-
-	if info.OS == "" {
-		t.Error("Expected platform info to have OS set")
+	tests := []struct {
+		name       string
+		action     *Action
+		mockOS     platform.Platform
+		wantErr    bool
+		shouldSkip bool
+	}{
+		{
+			name: "Oh My Zsh install command simulation",
+			action: &Action{
+				ID:   "test-omz-install",
+				Type: ActionTypeCommand,
+				PlatformCommands: map[Platform]PlatformCommand{
+					PlatformLinux: {
+						Command:       `sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"`,
+						CheckCommand:  "test -d $HOME/.oh-my-zsh || which omz",
+						PackageSource: PackageSourceAny,
+					},
+				},
+			},
+			mockOS:  platform.Linux,
+			wantErr: false,
+		},
+		{
+			name: "command with directory check using test",
+			action: &Action{
+				ID:   "test-dir-check",
+				Type: ActionTypeCommand,
+				PlatformCommands: map[Platform]PlatformCommand{
+					PlatformLinux: {
+						Command:      "echo creating directory",
+						CheckCommand: "test -d /tmp",
+					},
+				},
+			},
+			mockOS:     platform.Linux,
+			wantErr:    false,
+			shouldSkip: true,
+		},
+		{
+			name: "command with complex check that requires shell",
+			action: &Action{
+				ID:   "test-complex-check",
+				Type: ActionTypeCommand,
+				PlatformCommands: map[Platform]PlatformCommand{
+					PlatformLinux: {
+						Command:      "echo should skip",
+						CheckCommand: "test -d /tmp && echo exists",
+					},
+				},
+			},
+			mockOS:     platform.Linux,
+			wantErr:    false,
+			shouldSkip: true,
+		},
 	}
-	if info.PackageManagers == nil {
-		t.Error("Expected platform info to have PackageManagers set")
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			executor := &Executor{
+				platformInfo: createTestPlatform(tt.mockOS),
+			}
+
+			result, err := executor.executeCommand(context.Background(), tt.action)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("expected error but got none")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("unexpected error: %v", err)
+				}
+				if tt.shouldSkip && result != "Command already exists, skipping installation" {
+					t.Errorf("expected skip message, got %q", result)
+				}
+			}
+		})
 	}
 }
 
-// Helper function
-func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(s) > len(substr) && (s[:len(substr)] == substr || contains(s[1:], substr)))
-}
-
-func TestExecutor_checkPackageManagerDependency(t *testing.T) {
-	// Ensure we're in test mode
-	setPlatformTestMode(true)
-	defer setPlatformTestMode(false)
-	os.Setenv("CODORY_TEST", "1")
-	defer os.Unsetenv("CODORY_TEST")
+// TestExecutor_CheckPackageManagerDependency tests package manager dependency checks
+func TestExecutor_CheckPackageManagerDependency(t *testing.T) {
+	cleanup := setupTestEnvironment(t)
+	defer cleanup()
 
 	tests := []struct {
 		name        string
@@ -351,7 +417,7 @@ func TestExecutor_checkPackageManagerDependency(t *testing.T) {
 		{
 			name: "AUR on non-Arch platform",
 			executor: &Executor{
-				platformInfo: createMockPlatformInfo(platform.Debian),
+				platformInfo: createTestPlatform(platform.Debian),
 			},
 			source:      PackageSourceAUR,
 			wantErr:     true,
@@ -360,32 +426,30 @@ func TestExecutor_checkPackageManagerDependency(t *testing.T) {
 		{
 			name: "AUR on Arch with yay installed",
 			executor: &Executor{
-				platformInfo: createMockPlatformInfo(platform.Arch),
+				platformInfo: createTestPlatform(platform.Arch),
 			},
 			source:  PackageSourceAUR,
 			wantErr: false,
 			skipFunc: func() bool {
-				// Skip this test case if yay is not actually installed on the system
 				return !platform.IsYayInstalled()
 			},
 		},
 		{
 			name: "AUR on Arch without yay installed",
 			executor: &Executor{
-				platformInfo: createMockPlatformInfo(platform.Arch),
+				platformInfo: createTestPlatform(platform.Arch),
 			},
 			source:      PackageSourceAUR,
 			wantErr:     true,
 			errContains: "yay is not installed",
 			skipFunc: func() bool {
-				// Skip this test case if yay is actually installed on the system
 				return platform.IsYayInstalled()
 			},
 		},
 		{
 			name: "official package source",
 			executor: &Executor{
-				platformInfo: createMockPlatformInfo(platform.Debian),
+				platformInfo: createTestPlatform(platform.Debian),
 			},
 			source:  PackageSourceOfficial,
 			wantErr: false,
@@ -393,7 +457,7 @@ func TestExecutor_checkPackageManagerDependency(t *testing.T) {
 		{
 			name: "brew package source",
 			executor: &Executor{
-				platformInfo: createMockPlatformInfo(platform.MacOS),
+				platformInfo: createTestPlatform(platform.MacOS),
 			},
 			source:  PackageSourceBrew,
 			wantErr: false,
@@ -401,7 +465,7 @@ func TestExecutor_checkPackageManagerDependency(t *testing.T) {
 		{
 			name: "unknown package source",
 			executor: &Executor{
-				platformInfo: createMockPlatformInfo(platform.Debian),
+				platformInfo: createTestPlatform(platform.Debian),
 			},
 			source:  PackageSource("unknown"),
 			wantErr: false,
@@ -411,31 +475,30 @@ func TestExecutor_checkPackageManagerDependency(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.skipFunc != nil && tt.skipFunc() {
-				t.Skip("Skipping test case based on skip function")
+				t.Skip("skipping test based on system configuration")
 			}
+
 			err := tt.executor.checkPackageManagerDependency(context.Background(), tt.source)
 
 			if tt.wantErr {
 				if err == nil {
-					t.Errorf("Expected error but got none")
-				} else if tt.errContains != "" && !contains(err.Error(), tt.errContains) {
-					t.Errorf("Expected error to contain '%s', got '%s'", tt.errContains, err.Error())
+					t.Errorf("expected error but got none")
+				} else if tt.errContains != "" && !strings.Contains(err.Error(), tt.errContains) {
+					t.Errorf("expected error to contain %q, got %q", tt.errContains, err.Error())
 				}
 			} else {
 				if err != nil {
-					t.Errorf("Unexpected error: %v", err)
+					t.Errorf("unexpected error: %v", err)
 				}
 			}
 		})
 	}
 }
 
+// TestExecutor_NeedsPackageManagerInstallation tests package manager installation needs
 func TestExecutor_NeedsPackageManagerInstallation(t *testing.T) {
-	// Ensure we're in test mode
-	setPlatformTestMode(true)
-	defer setPlatformTestMode(false)
-	os.Setenv("CODORY_TEST", "1")
-	defer os.Unsetenv("CODORY_TEST")
+	cleanup := setupTestEnvironment(t)
+	defer cleanup()
 
 	tests := []struct {
 		name       string
@@ -448,7 +511,7 @@ func TestExecutor_NeedsPackageManagerInstallation(t *testing.T) {
 		{
 			name: "AUR action on Arch without yay",
 			executor: &Executor{
-				platformInfo: createMockPlatformInfo(platform.Arch),
+				platformInfo: createTestPlatform(platform.Arch),
 			},
 			action: &Action{
 				PlatformCommands: map[Platform]PlatformCommand{
@@ -461,14 +524,13 @@ func TestExecutor_NeedsPackageManagerInstallation(t *testing.T) {
 			wantNeeds:  true,
 			wantSource: PackageSourceAUR,
 			skipFunc: func() bool {
-				// Skip this test case if yay is actually installed on the system
 				return platform.IsYayInstalled()
 			},
 		},
 		{
 			name: "AUR action on non-Arch platform",
 			executor: &Executor{
-				platformInfo: createMockPlatformInfo(platform.Debian),
+				platformInfo: createTestPlatform(platform.Debian),
 			},
 			action: &Action{
 				PlatformCommands: map[Platform]PlatformCommand{
@@ -484,7 +546,7 @@ func TestExecutor_NeedsPackageManagerInstallation(t *testing.T) {
 		{
 			name: "official package action",
 			executor: &Executor{
-				platformInfo: createMockPlatformInfo(platform.Debian),
+				platformInfo: createTestPlatform(platform.Debian),
 			},
 			action: &Action{
 				PlatformCommands: map[Platform]PlatformCommand{
@@ -500,7 +562,7 @@ func TestExecutor_NeedsPackageManagerInstallation(t *testing.T) {
 		{
 			name: "no platform command",
 			executor: &Executor{
-				platformInfo: createMockPlatformInfo(platform.Debian),
+				platformInfo: createTestPlatform(platform.Debian),
 			},
 			action: &Action{
 				PlatformCommands: map[Platform]PlatformCommand{},
@@ -511,7 +573,7 @@ func TestExecutor_NeedsPackageManagerInstallation(t *testing.T) {
 		{
 			name: "AUR action with PlatformLinux fallback for Arch",
 			executor: &Executor{
-				platformInfo: createMockPlatformInfo(platform.Arch),
+				platformInfo: createTestPlatform(platform.Arch),
 			},
 			action: &Action{
 				PlatformCommands: map[Platform]PlatformCommand{
@@ -524,7 +586,6 @@ func TestExecutor_NeedsPackageManagerInstallation(t *testing.T) {
 			wantNeeds:  true,
 			wantSource: PackageSourceAUR,
 			skipFunc: func() bool {
-				// Skip this test case if yay is actually installed on the system
 				return platform.IsYayInstalled()
 			},
 		},
@@ -533,8 +594,9 @@ func TestExecutor_NeedsPackageManagerInstallation(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.skipFunc != nil && tt.skipFunc() {
-				t.Skip("Skipping test case based on skip function")
+				t.Skip("skipping test based on system configuration")
 			}
+
 			needs, source := tt.executor.NeedsPackageManagerInstallation(tt.action)
 
 			if needs != tt.wantNeeds {
@@ -544,5 +606,21 @@ func TestExecutor_NeedsPackageManagerInstallation(t *testing.T) {
 				t.Errorf("NeedsPackageManagerInstallation() source = %v, want %v", source, tt.wantSource)
 			}
 		})
+	}
+}
+
+// TestExecutor_GetPlatformInfo tests platform info retrieval
+func TestExecutor_GetPlatformInfo(t *testing.T) {
+	cleanup := setupTestEnvironment(t)
+	defer cleanup()
+
+	executor := NewExecutor()
+	info := executor.GetPlatformInfo()
+
+	if info.OS == "" {
+		t.Error("expected platform info to have OS set")
+	}
+	if info.PackageManagers == nil {
+		t.Error("expected platform info to have PackageManagers set")
 	}
 }

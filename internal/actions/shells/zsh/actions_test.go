@@ -34,18 +34,20 @@ func TestInit(t *testing.T) {
 	}
 
 	// Check if the expected actions are registered
-	if len(zshCategory.Actions) != 2 {
-		t.Fatalf("Expected 2 actions in zsh category, got %d", len(zshCategory.Actions))
+	if len(zshCategory.Actions) != 3 {
+		t.Fatalf("Expected 3 actions in zsh category, got %d", len(zshCategory.Actions))
 	}
 
 	// Verify both actions are present
-	var installZshAction, setZshDefaultAction *actions.Action
+	var installZshAction, setZshDefaultAction, installOmzAction *actions.Action
 	for _, action := range zshCategory.Actions {
 		switch action.ID {
 		case "install_zsh":
 			installZshAction = action
 		case "set_zsh_default_shell":
 			setZshDefaultAction = action
+		case "install_omz":
+			installOmzAction = action
 		}
 	}
 
@@ -55,9 +57,15 @@ func TestInit(t *testing.T) {
 	if setZshDefaultAction == nil {
 		t.Error("set_zsh_default_shell action not found in zsh category")
 	}
+	if installOmzAction == nil {
+		t.Error("install_omz action not found in zsh category")
+	}
 
 	if installZshAction.Name != "Install Zsh" {
-		t.Errorf("Expected action name to be 'Install Zsh', got '%s'", installZshAction.Name)
+		t.Errorf("Expected install_zsh action name to be 'Install Zsh', got '%s'", installZshAction.Name)
+	}
+	if installOmzAction.Name != "Install Oh My Zsh" {
+		t.Errorf("Expected install_omz action name to be 'Install Oh My Zsh', got '%s'", installOmzAction.Name)
 	}
 }
 
@@ -223,6 +231,10 @@ func TestZshActionsHaveCorrectTypes(t *testing.T) {
 			if action.Type != actions.ActionTypeFunction {
 				t.Errorf("Action %s should be of type Function, got %s", action.ID, action.Type)
 			}
+		case "install_omz":
+			if action.Type != actions.ActionTypeCommand {
+				t.Errorf("Action %s should be of type Command, got %s", action.ID, action.Type)
+			}
 		default:
 			t.Errorf("Unknown action %s with type %s", action.ID, action.Type)
 		}
@@ -251,19 +263,21 @@ func TestZshCategoryRegistrationVerification(t *testing.T) {
 		t.Errorf("Expected zsh category description to be 'Install zsh and most common plugins', got '%s'", zshCategory.Description)
 	}
 
-	// Verify zsh category has both expected actions
-	if len(zshCategory.Actions) != 2 {
-		t.Fatalf("Expected 2 actions in zsh category, got %d", len(zshCategory.Actions))
+	// Verify zsh category has all expected actions
+	if len(zshCategory.Actions) != 3 {
+		t.Fatalf("Expected 3 actions in zsh category, got %d", len(zshCategory.Actions))
 	}
 
-	// Verify both actions are present
-	var installZshAction, setZshDefaultAction *actions.Action
+	// Verify all actions are present
+	var installZshAction, setZshDefaultAction, installOmzAction *actions.Action
 	for _, action := range zshCategory.Actions {
 		switch action.ID {
 		case "install_zsh":
 			installZshAction = action
 		case "set_zsh_default_shell":
 			setZshDefaultAction = action
+		case "install_omz":
+			installOmzAction = action
 		}
 	}
 
@@ -272,6 +286,9 @@ func TestZshCategoryRegistrationVerification(t *testing.T) {
 	}
 	if setZshDefaultAction == nil {
 		t.Error("set_zsh_default_shell action not found in zsh category")
+	}
+	if installOmzAction == nil {
+		t.Error("install_omz action not found in zsh category")
 	}
 
 	// Verify zsh category is hidden on Windows

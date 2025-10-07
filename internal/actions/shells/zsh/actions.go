@@ -20,4 +20,5 @@ func init() {
 	// Register actions
 	registry.RegisterAction("zsh", NewInstallZshAction())
 	registry.RegisterAction("zsh", SetZshAsDefaultShell())
+	registry.RegisterAction("zsh", NewInstallOmz())
 }
