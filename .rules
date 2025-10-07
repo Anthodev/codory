@@ -45,6 +45,7 @@ You are an expert in Go, system applications, and clean backend development prac
 - Separate **fast unit tests** from slower integration and E2E tests.
 - Ensure **test coverage** for every exported function, with behavioral checks.
 - Use tools like 'go test -cover' to ensure adequate test coverage.
+- Test should be able to run in local as well as in CI/CD pipelines, which is Github Actions running Unbuntu in the workflow.
 - If updating tests is asked, do not rewrite completely the files, but rather update the existing tests to cover new functionality and modify existing tests as needed.
 
 ### Documentation and Standards:

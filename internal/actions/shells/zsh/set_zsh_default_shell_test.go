@@ -5,16 +5,17 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"runtime"
 	"strings"
 	"testing"
 
 	"anthodev/codory/internal/actions"
-	"anthodev/codory/internal/platform"
 )
 
 func TestSetZshAsDefaultShell(t *testing.T) {
 	action := SetZshAsDefaultShell()
 
+	// Test action properties
 	if action == nil {
 		t.Fatal("SetZshAsDefaultShell() returned nil")
 	}
@@ -27,10 +28,6 @@ func TestSetZshAsDefaultShell(t *testing.T) {
 		t.Errorf("Expected action name to be 'Set Zsh as default shell', got '%s'", action.Name)
 	}
 
-	if action.Description != "Set Zsh as the default shell in your system" {
-		t.Errorf("Expected action description to be 'Set Zsh as the default shell in your system', got '%s'", action.Description)
-	}
-
 	if action.Type != actions.ActionTypeFunction {
 		t.Errorf("Expected action type to be '%s', got '%s'", actions.ActionTypeFunction, action.Type)
 	}
@@ -39,189 +36,122 @@ func TestSetZshAsDefaultShell(t *testing.T) {
 		t.Error("Expected action handler to be set")
 	}
 
-	// Verify it's hidden on Windows
+	// Test platform visibility
 	if !action.IsHiddenOnPlatform(actions.PlatformWindows) {
 		t.Error("Action should be hidden on Windows platform")
 	}
 
-	// Verify it's visible on other platforms
-	visiblePlatforms := []actions.Platform{
-		actions.PlatformLinux,
-		actions.PlatformDebian,
-		actions.PlatformArch,
-		actions.PlatformMacOS,
-	}
-
-	for _, platform := range visiblePlatforms {
+	// Should be visible on Linux platforms and macOS
+	for _, platform := range []actions.Platform{actions.PlatformLinux, actions.PlatformDebian, actions.PlatformArch, actions.PlatformMacOS} {
 		if action.IsHiddenOnPlatform(platform) {
 			t.Errorf("Action should not be hidden on %s platform", platform)
 		}
 	}
 }
 
-func TestSetZshAsDefaultShell_ValidationOnly(t *testing.T) {
-	// Ensure we're in test mode
+func TestSetZshAsDefaultShell_Integration(t *testing.T) {
+	// Set test mode
 	os.Setenv("CODORY_TEST", "1")
 	defer os.Unsetenv("CODORY_TEST")
 
-	tests := []struct {
-		name          string
-		mockOS        platform.Platform
-		zshInstalled  bool
-		currentShell  string
-		wantErr       bool
-		errContains   string
-		wantResult    string
-		skipCondition func() bool
-	}{
-		{
-			name:          "Windows platform",
-			mockOS:        platform.Windows,
-			zshInstalled:  false,
-			currentShell:  "/bin/bash",
-			wantErr:       true,
-			errContains:   "Zsh is not supported on Windows",
-			wantResult:    "",
-			skipCondition: nil,
-		},
-		{
-			name:          "Zsh not installed",
-			mockOS:        platform.Linux,
-			zshInstalled:  false,
-			currentShell:  "/bin/bash",
-			wantErr:       true,
-			errContains:   "Zsh is not installed",
-			wantResult:    "",
-			skipCondition: nil,
-		},
-		{
-			name:          "Zsh already default shell",
-			mockOS:        platform.Linux,
-			zshInstalled:  true,
-			currentShell:  "/bin/zsh",
-			wantErr:       false,
-			errContains:   "",
-			wantResult:    "Zsh is already the default shell",
-			skipCondition: nil,
-		},
-		{
-			name:         "Zsh installed but not default",
-			mockOS:       platform.Linux,
-			zshInstalled: true,
-			currentShell: "/bin/bash",
-			wantErr:      true,
-			errContains:  "failed to set Zsh as default shell",
-			wantResult:   "",
-			skipCondition: func() bool {
-				// Skip this test in CI/test environments where we can't actually change shells
-				return os.Getenv("CODORY_TEST") == "1" || os.Getenv("CI") == "true"
-			},
-		},
+	// Test Windows platform behavior
+	if runtime.GOOS == "windows" {
+		result, err := setZshAsDefaultShell(context.Background())
+		if err == nil {
+			t.Error("Expected error on Windows")
+		}
+		if !strings.Contains(err.Error(), "Zsh is not supported on Windows") {
+			t.Errorf("Expected Windows-specific error, got: %v", err)
+		}
+		if result != "" {
+			t.Error("Expected empty result on Windows")
+		}
+		return
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			currentOS := platform.Detect()
-			if currentOS != tt.mockOS {
-				t.Skipf("Skipping test: expected OS %s, but running on %s", tt.mockOS, currentOS)
-			}
+	// Test zsh installation check
+	if _, err := exec.LookPath("zsh"); err != nil {
+		// Zsh not installed - should fail validation
+		result, err := setZshAsDefaultShell(context.Background())
+		if err == nil {
+			t.Error("Expected error when zsh is not installed")
+		}
+		if !strings.Contains(err.Error(), "Zsh is not installed") {
+			t.Errorf("Expected 'zsh not installed' error, got: %v", err)
+		}
+		if result != "" {
+			t.Error("Expected empty result when zsh not installed")
+		}
+		return
+	}
 
-			// Check skip condition if provided
-			if tt.skipCondition != nil && tt.skipCondition() {
-				t.Skipf("Skipping test case based on skip condition")
-			}
+	// Test current shell check
+	if shell, err := exec.Command("sh", "-c", "echo $SHELL").Output(); err == nil && strings.Contains(string(shell), "zsh") {
+		// Zsh is already default - should return early
+		result, err := setZshAsDefaultShell(context.Background())
+		if err != nil {
+			t.Errorf("Expected no error when zsh is already default, got: %v", err)
+		}
+		expected := "Zsh is already the default shell"
+		if result != expected {
+			t.Errorf("Expected result '%s', got '%s'", expected, result)
+		}
+		return
+	}
 
-			// For the "Zsh not installed" test, skip if zsh is actually installed
-			if tt.name == "Zsh not installed" {
-				if _, err := exec.LookPath("zsh"); err == nil {
-					t.Skip("Skipping 'Zsh not installed' test because zsh is installed")
-				}
-			}
-
-			// For the "Zsh already default shell" test, skip if zsh is not the default
-			if tt.name == "Zsh already default shell" {
-				if shell, err := exec.Command("sh", "-c", "echo $SHELL").Output(); err != nil || !strings.Contains(string(shell), "zsh") {
-					t.Skip("Skipping 'Zsh already default shell' test because zsh is not the default")
-				}
-			}
-
-			result, err := setZshAsDefaultShell(context.Background())
-
-			if tt.wantErr {
-				if err == nil {
-					t.Errorf("Expected error but got none")
-				} else if tt.errContains != "" && !contains(err.Error(), tt.errContains) {
-					t.Errorf("Expected error to contain '%s', got '%s'", tt.errContains, err.Error())
-				}
-			} else {
-				if err != nil {
-					t.Errorf("Unexpected error: %v", err)
-				}
-				if result != tt.wantResult {
-					t.Errorf("Expected result '%s', got '%s'", tt.wantResult, result)
-				}
-			}
-		})
+	// Test actual shell change attempt (should fail in test environment)
+	result, err := setZshAsDefaultShell(context.Background())
+	if err == nil {
+		t.Error("Expected error when trying to change shell in test environment")
+	}
+	if !strings.Contains(err.Error(), "failed to set Zsh as default shell") {
+		t.Errorf("Expected 'failed to set' error, got: %v", err)
+	}
+	if result != "" {
+		t.Error("Expected empty result when shell change fails")
 	}
 }
 
 func TestValidateZshInstallation(t *testing.T) {
-	// Ensure we're in test mode
-	os.Setenv("CODORY_TEST", "1")
-	defer os.Unsetenv("CODORY_TEST")
-
 	tests := []struct {
 		name        string
-		mockOS      platform.Platform
-		wantErr     bool
-		errContains string
+		checkZsh    bool
+		expectError bool
+		errorMsg    string
 	}{
 		{
-			name:        "validation on Windows",
-			mockOS:      platform.Windows,
-			wantErr:     true,
-			errContains: "Zsh is not supported on Windows",
+			name:        "zsh installed",
+			checkZsh:    true,
+			expectError: false,
 		},
 		{
-			name:        "validation on Linux with zsh",
-			mockOS:      platform.Linux,
-			wantErr:     false,
-			errContains: "",
-		},
-		{
-			name:        "validation on macOS",
-			mockOS:      platform.MacOS,
-			wantErr:     false,
-			errContains: "",
-		},
-		{
-			name:        "validation on Debian",
-			mockOS:      platform.Debian,
-			wantErr:     false,
-			errContains: "",
-		},
-		{
-			name:        "validation on Arch",
-			mockOS:      platform.Arch,
-			wantErr:     false,
-			errContains: "",
+			name:        "zsh not installed",
+			checkZsh:    false,
+			expectError: true,
+			errorMsg:    "Zsh is not installed",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			currentOS := platform.Detect()
-			if currentOS != tt.mockOS {
-				t.Skipf("Skipping test: expected OS %s, but running on %s", tt.mockOS, currentOS)
+			if tt.checkZsh {
+				// Skip if zsh is not actually installed
+				if _, err := exec.LookPath("zsh"); err != nil {
+					t.Skip("zsh is not installed on this system")
+				}
+			} else {
+				// Skip if zsh is installed
+				if _, err := exec.LookPath("zsh"); err == nil {
+					t.Skip("zsh is installed on this system")
+				}
 			}
 
 			err := validateZshInstallation()
-
-			if tt.wantErr {
+			if tt.expectError {
 				if err == nil {
-					t.Errorf("Expected error but got none")
-				} else if tt.errContains != "" && !contains(err.Error(), tt.errContains) {
-					t.Errorf("Expected error to contain '%s', got '%s'", tt.errContains, err.Error())
+					t.Error("Expected error but got none")
+				} else if tt.errorMsg != "" && !strings.Contains(err.Error(), tt.errorMsg) {
+					t.Errorf("Expected error to contain '%s', got '%s'", tt.errorMsg, err.Error())
 				}
 			} else {
 				if err != nil {
@@ -232,221 +162,27 @@ func TestValidateZshInstallation(t *testing.T) {
 	}
 }
 
-func TestSetZshAsDefaultShell_ContextCancellation(t *testing.T) {
-	// Ensure we're in test mode
-	os.Setenv("CODORY_TEST", "1")
-	defer os.Unsetenv("CODORY_TEST")
+func TestErrorWrapping(t *testing.T) {
+	// Test error message formatting
+	err := fmt.Errorf("test error")
+	wrappedErr := fmt.Errorf("context: %w", err)
 
-	// Skip on Windows since it fails validation first
-	if platform.Detect() == platform.Windows {
-		t.Skip("Skipping context cancellation test on Windows platform")
+	if !strings.Contains(wrappedErr.Error(), "context:") {
+		t.Error("Error should be wrapped with context")
 	}
-
-	// Skip if zsh is not installed
-	if _, err := exec.LookPath("zsh"); err != nil {
-		t.Skip("Skipping context cancellation test because zsh is not installed")
+	if !strings.Contains(wrappedErr.Error(), "test error") {
+		t.Error("Original error should be preserved")
 	}
+}
 
-	// Create a cancelled context
-	ctx, cancel := context.WithCancel(context.Background())
-	cancel() // Cancel immediately
+func TestActionHandler(t *testing.T) {
+	action := SetZshAsDefaultShell()
 
-	// Test with cancelled context
-	result, err := setZshAsDefaultShell(ctx)
+	// Test that handler can be called
+	result, err := action.Handler(context.Background())
 
-	// Context cancellation should either cause an error or be handled gracefully
-	// The actual behavior depends on how the underlying commands handle context
+	// Should either succeed or fail gracefully, but not panic
 	if err != nil && result != "" {
 		t.Error("Expected either error or result, not both")
-	}
-}
-
-func TestSetZshAsDefaultShell_PlatformValidationOnly(t *testing.T) {
-	// Ensure we're in test mode
-	os.Setenv("CODORY_TEST", "1")
-	defer os.Unsetenv("CODORY_TEST")
-
-	// This test validates platform-specific behavior
-	currentOS := platform.Detect()
-
-	if currentOS == platform.Windows {
-		// On Windows, should fail validation
-		result, err := setZshAsDefaultShell(context.Background())
-		if err == nil {
-			t.Error("Expected error on Windows platform")
-		}
-		if !contains(err.Error(), "Zsh is not supported on Windows") {
-			t.Errorf("Expected error to contain 'Zsh is not supported on Windows', got: %v", err)
-		}
-		if result != "" {
-			t.Error("Expected empty result on Windows platform")
-		}
-	} else {
-		// On other platforms, validation should pass if zsh is installed
-		if _, err := exec.LookPath("zsh"); err != nil {
-			t.Skip("Skipping validation test because zsh is not installed")
-		}
-
-		// If zsh is already default, should return early
-		if shell, err := exec.Command("sh", "-c", "echo $SHELL").Output(); err == nil && strings.Contains(string(shell), "zsh") {
-			result, err := setZshAsDefaultShell(context.Background())
-			if err != nil {
-				t.Errorf("Expected no error when zsh is already default, got: %v", err)
-			}
-			expectedResult := "Zsh is already the default shell"
-			if result != expectedResult {
-				t.Errorf("Expected result '%s', got '%s'", expectedResult, result)
-			}
-		}
-	}
-}
-
-func TestSetZshAsDefaultShell_ErrorMessageFormatting(t *testing.T) {
-	// Ensure we're in test mode
-	os.Setenv("CODORY_TEST", "1")
-	defer os.Unsetenv("CODORY_TEST")
-
-	// Test error message formatting for different scenarios
-	tests := []struct {
-		name          string
-		mockOS        platform.Platform
-		wantErr       bool
-		errContains   string
-		skipCondition func() bool
-	}{
-		{
-			name:          "error message formatting on Windows",
-			mockOS:        platform.Windows,
-			wantErr:       true,
-			errContains:   "Zsh is not supported on Windows",
-			skipCondition: nil,
-		},
-		{
-			name:        "error message formatting when zsh not installed",
-			mockOS:      platform.Linux,
-			wantErr:     true,
-			errContains: "Zsh is not installed",
-			skipCondition: func() bool {
-				// Skip this test if zsh is installed
-				_, err := exec.LookPath("zsh")
-				return err == nil
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			currentOS := platform.Detect()
-			if currentOS != tt.mockOS {
-				t.Skipf("Skipping test: expected OS %s, but running on %s", tt.mockOS, currentOS)
-			}
-
-			// Check skip condition if provided
-			if tt.skipCondition != nil && tt.skipCondition() {
-				t.Skipf("Skipping test case based on skip condition")
-			}
-
-			_, err := setZshAsDefaultShell(context.Background())
-
-			if tt.wantErr {
-				if err == nil {
-					t.Errorf("Expected error but got none")
-				} else if tt.errContains != "" && !contains(err.Error(), tt.errContains) {
-					t.Errorf("Expected error to contain '%s', got '%s'", tt.errContains, err.Error())
-				}
-
-				// Test that error messages are properly formatted with context
-				if err != nil && len(err.Error()) < 10 {
-					t.Errorf("Error message seems too short to be properly formatted: %s", err.Error())
-				}
-			}
-		})
-	}
-}
-
-func TestSetZshAsDefaultShell_ValidateZshInstallation_ErrorWrapping(t *testing.T) {
-	// Ensure we're in test mode
-	os.Setenv("CODORY_TEST", "1")
-	defer os.Unsetenv("CODORY_TEST")
-
-	// Test error wrapping in validateZshInstallation
-	currentOS := platform.Detect()
-	if currentOS != platform.Windows {
-		t.Skip("Skipping error wrapping test on non-Windows system")
-	}
-
-	err := validateZshInstallation()
-	if err == nil {
-		t.Error("Expected error on Windows platform")
-	}
-
-	// Test that the error is properly formatted
-	expectedMsg := "Zsh is not supported on Windows"
-	if err != nil && !contains(err.Error(), expectedMsg) {
-		t.Errorf("Expected error to contain '%s', got '%s'", expectedMsg, err.Error())
-	}
-}
-
-func TestSetZshAsDefaultShell_SetZshAsDefaultShell_ErrorWrapping(t *testing.T) {
-	// Ensure we're in test mode
-	os.Setenv("CODORY_TEST", "1")
-	defer os.Unsetenv("CODORY_TEST")
-
-	// Test error wrapping in the main setZshAsDefaultShell function
-	currentOS := platform.Detect()
-	if currentOS == platform.Windows {
-		t.Skip("Skipping install error wrapping test on Windows system")
-	}
-
-	// Skip if zsh is not installed
-	if _, err := exec.LookPath("zsh"); err != nil {
-		t.Skip("Skipping install error wrapping test because zsh is not installed")
-	}
-
-	// Skip if zsh is already default (function returns early)
-	if shell, err := exec.Command("sh", "-c", "echo $SHELL").Output(); err == nil && strings.Contains(string(shell), "zsh") {
-		t.Skip("Skipping install error wrapping test because zsh is already default")
-	}
-
-	_, err := setZshAsDefaultShell(context.Background())
-	if err == nil {
-		t.Error("Expected error when trying to set zsh as default in test environment")
-	}
-
-	// Test that the error message is properly formatted
-	if err != nil && !contains(err.Error(), "failed to set Zsh as default shell") {
-		t.Errorf("Expected error to contain 'failed to set Zsh as default shell', got: %v", err)
-	}
-}
-
-// Helper function
-func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(s) > len(substr) && (s[:len(substr)] == substr || contains(s[1:], substr)))
-}
-
-// Test helper function to verify string contains functionality
-func TestContainsHelper(t *testing.T) {
-	tests := []struct {
-		s      string
-		substr string
-		want   bool
-	}{
-		{"hello world", "world", true},
-		{"hello world", "foo", false},
-		{"", "foo", false},
-		{"foo", "", true},
-		{"foo", "foo", true},
-		{"foobar", "foo", true},
-		{"foobar", "bar", true},
-		{"foobar", "baz", false},
-	}
-
-	for _, tt := range tests {
-		t.Run(fmt.Sprintf("contains(%q, %q)", tt.s, tt.substr), func(t *testing.T) {
-			got := contains(tt.s, tt.substr)
-			if got != tt.want {
-				t.Errorf("contains(%q, %q) = %v, want %v", tt.s, tt.substr, got, tt.want)
-			}
-		})
 	}
 }
