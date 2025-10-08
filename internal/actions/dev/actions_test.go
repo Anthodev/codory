@@ -33,17 +33,18 @@ func TestInit(t *testing.T) {
 		t.Errorf("Expected dev category description to be 'Development tools and utilities', got '%s'", devCategory.Description)
 	}
 
-	// Check if all expected actions are registered (UUIDv4, UUIDv7, DecodeUUIDv7, SymfonySecret)
-	if len(devCategory.Actions) != 4 {
-		t.Fatalf("Expected 4 actions in dev category, got %d", len(devCategory.Actions))
+	// Check if all expected actions are registered (UUIDv4, UUIDv7, DecodeUUIDv7, SymfonySecret, InstallGitmoji)
+	if len(devCategory.Actions) != 5 {
+		t.Fatalf("Expected 5 actions in dev category, got %d", len(devCategory.Actions))
 	}
 
 	// Verify all expected actions are present
 	expectedActions := map[string]string{
-		"uuidv4":         "Generate UUIDv4",
-		"uuidv7":         "Generate UUIDv7",
-		"decode_uuidv7":  "Decode UUIDv7",
-		"symfony_secret": "Generate Symfony secret",
+		"uuidv4":          "Generate UUIDv4",
+		"uuidv7":          "Generate UUIDv7",
+		"decode_uuidv7":   "Decode UUIDv7",
+		"symfony_secret":  "Generate Symfony secret",
+		"install_gitmoji": "Install Gitmoji",
 	}
 
 	for actionID, expectedName := range expectedActions {
@@ -188,10 +189,17 @@ func TestDevActionsHaveCorrectTypes(t *testing.T) {
 		t.Fatal("Dev category not found")
 	}
 
-	// Verify that all actions are function-type actions
+	// Verify that actions have the correct types
 	for _, action := range devCategory.Actions {
-		if action.Type != actions.ActionTypeFunction {
-			t.Errorf("Action %s should be of type Function, got %s", action.ID, action.Type)
+		switch action.ID {
+		case "install_gitmoji":
+			if action.Type != actions.ActionTypeCommand {
+				t.Errorf("Action %s should be of type Command, got %s", action.ID, action.Type)
+			}
+		default:
+			if action.Type != actions.ActionTypeFunction {
+				t.Errorf("Action %s should be of type Function, got %s", action.ID, action.Type)
+			}
 		}
 	}
 }

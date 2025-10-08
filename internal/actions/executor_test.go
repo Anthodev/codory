@@ -285,6 +285,19 @@ func TestExecutor_ExecuteCommand(t *testing.T) {
 			mockOS:  platform.Arch,
 			wantErr: false,
 		},
+		{
+			name: "command with custom success message",
+			action: &Action{
+				ID:             "test-custom-message",
+				Type:           ActionTypeCommand,
+				SuccessMessage: "Custom success: Installation completed successfully!",
+				PlatformCommands: map[Platform]PlatformCommand{
+					PlatformLinux: {Command: "echo test"},
+				},
+			},
+			mockOS:  platform.Linux,
+			wantErr: false,
+		},
 	}
 
 	for _, tt := range tests {

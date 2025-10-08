@@ -82,6 +82,10 @@ func (e *Executor) executeCommand(ctx context.Context, action *Action) (string, 
 		if err != nil {
 			return string(output), fmt.Errorf("command failed: %w\n%s", err, output)
 		}
+		// Use custom success message if provided, otherwise use command output
+		if action.SuccessMessage != "" {
+			return action.SuccessMessage, nil
+		}
 		return string(output), nil
 	}
 
@@ -98,6 +102,10 @@ func (e *Executor) executeCommand(ctx context.Context, action *Action) (string, 
 		return string(output), fmt.Errorf("command failed: %w\n%s", err, output)
 	}
 
+	// Use custom success message if provided, otherwise use command output
+	if action.SuccessMessage != "" {
+		return action.SuccessMessage, nil
+	}
 	return string(output), nil
 }
 
