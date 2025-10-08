@@ -21,4 +21,5 @@ func init() {
 	registry.RegisterAction("zsh_plugins", InstallZshPluginHistorySearch())
 	registry.RegisterAction("zsh_plugins", InstallZshPluginSyntaxHighlighting())
 	registry.RegisterAction("zsh_plugins", InstallZshPluginAutosuggestions())
+	registry.RegisterAction("zsh_plugins", InstallZshPluginCompletions())
 }

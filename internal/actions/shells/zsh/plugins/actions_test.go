@@ -33,14 +33,15 @@ func TestInit(t *testing.T) {
 	}
 
 	// Check if the expected actions are registered
-	if len(zshPluginsCategory.Actions) != 3 {
-		t.Fatalf("Expected 3 actions in zsh_plugins category, got %d", len(zshPluginsCategory.Actions))
+	if len(zshPluginsCategory.Actions) != 4 {
+		t.Fatalf("Expected 4 actions in zsh_plugins category, got %d", len(zshPluginsCategory.Actions))
 	}
 
 	// Verify all actions are present
 	var installHistorySearchAction *actions.Action
 	var installSyntaxHighlightingAction *actions.Action
 	var installAutosuggestionsAction *actions.Action
+	var installCompletionsAction *actions.Action
 	for _, action := range zshPluginsCategory.Actions {
 		if action.ID == "install_zsh_plugin_history_search" {
 			installHistorySearchAction = action
@@ -48,6 +49,8 @@ func TestInit(t *testing.T) {
 			installSyntaxHighlightingAction = action
 		} else if action.ID == "install_zsh_plugin_autosuggestions" {
 			installAutosuggestionsAction = action
+		} else if action.ID == "install_zsh_plugin_completions" {
+			installCompletionsAction = action
 		}
 	}
 
@@ -63,6 +66,10 @@ func TestInit(t *testing.T) {
 		t.Error("install_zsh_plugin_autosuggestions action not found in zsh_plugins category")
 	}
 
+	if installCompletionsAction == nil {
+		t.Error("install_zsh_plugin_completions action not found in zsh_plugins category")
+	}
+
 	if installHistorySearchAction.Name != "Install Zsh Plugin zsh-history-substring-search" {
 		t.Errorf("Expected install_zsh_plugin_history_search action name to be 'Install Zsh Plugin zsh-history-substring-search', got '%s'", installHistorySearchAction.Name)
 	}
@@ -73,6 +80,10 @@ func TestInit(t *testing.T) {
 
 	if installAutosuggestionsAction.Name != "Install Zsh Plugin zsh-autosuggestions" {
 		t.Errorf("Expected install_zsh_plugin_autosuggestions action name to be 'Install Zsh Plugin zsh-autosuggestions', got '%s'", installAutosuggestionsAction.Name)
+	}
+
+	if installCompletionsAction.Name != "Install Zsh Plugin zsh-completions" {
+		t.Errorf("Expected install_zsh_plugin_completions action name to be 'Install Zsh Plugin zsh-completions', got '%s'", installCompletionsAction.Name)
 	}
 }
 
@@ -242,6 +253,10 @@ func TestZshPluginsActionsHaveCorrectTypes(t *testing.T) {
 			if action.Type != actions.ActionTypeCommand {
 				t.Errorf("Action %s should be of type Command, got %s", action.ID, action.Type)
 			}
+		case "install_zsh_plugin_completions":
+			if action.Type != actions.ActionTypeCommand {
+				t.Errorf("Action %s should be of type Command, got %s", action.ID, action.Type)
+			}
 		default:
 			t.Errorf("Unknown action %s with type %s", action.ID, action.Type)
 		}
@@ -271,14 +286,15 @@ func TestZshPluginsCategoryRegistrationVerification(t *testing.T) {
 	}
 
 	// Verify zsh_plugins category has the expected actions
-	if len(zshPluginsCategory.Actions) != 3 {
-		t.Fatalf("Expected 3 actions in zsh_plugins category, got %d", len(zshPluginsCategory.Actions))
+	if len(zshPluginsCategory.Actions) != 4 {
+		t.Fatalf("Expected 4 actions in zsh_plugins category, got %d", len(zshPluginsCategory.Actions))
 	}
 
 	// Verify all actions are present
 	var installHistorySearchAction *actions.Action
 	var installSyntaxHighlightingAction *actions.Action
 	var installAutosuggestionsAction *actions.Action
+	var installCompletionsAction *actions.Action
 	for _, action := range zshPluginsCategory.Actions {
 		if action.ID == "install_zsh_plugin_history_search" {
 			installHistorySearchAction = action
@@ -286,6 +302,8 @@ func TestZshPluginsCategoryRegistrationVerification(t *testing.T) {
 			installSyntaxHighlightingAction = action
 		} else if action.ID == "install_zsh_plugin_autosuggestions" {
 			installAutosuggestionsAction = action
+		} else if action.ID == "install_zsh_plugin_completions" {
+			installCompletionsAction = action
 		}
 	}
 
@@ -299,6 +317,10 @@ func TestZshPluginsCategoryRegistrationVerification(t *testing.T) {
 
 	if installAutosuggestionsAction == nil {
 		t.Error("install_zsh_plugin_autosuggestions action not found in zsh_plugins category")
+	}
+
+	if installCompletionsAction == nil {
+		t.Error("install_zsh_plugin_completions action not found in zsh_plugins category")
 	}
 
 	// Verify zsh_plugins category is hidden on Windows
