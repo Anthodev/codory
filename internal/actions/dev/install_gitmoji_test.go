@@ -1,37 +1,39 @@
-package shells
+package dev
 
 import (
-	"fmt"
 	"testing"
 
 	"anthodev/codory/internal/actions"
 	"anthodev/codory/pkg/utils"
-	"anthodev/codory/test/testutil"
 )
 
-// TestNewInstallOmz tests the creation of the Install Oh My Zsh action
+// TestNewInstallGitmojiAction tests the creation of the Install Gitmoji action
 // This test verifies the action configuration without executing any actual commands
-func TestNewInstallOmz(t *testing.T) {
-	action := NewInstallOmz()
+func TestNewInstallGitmojiAction(t *testing.T) {
+	action := NewInstallGitmojiAction()
 
 	if action == nil {
-		t.Fatal("NewInstallOmz() returned nil")
+		t.Fatal("NewInstallGitmojiAction() returned nil")
 	}
 
-	if action.ID != "install_omz" {
-		t.Errorf("Expected action ID to be 'install_omz', got '%s'", action.ID)
+	if action.ID != "install_gitmoji" {
+		t.Errorf("Expected action ID to be 'install_gitmoji', got '%s'", action.ID)
 	}
 
-	if action.Name != "Install Oh My Zsh" {
-		t.Errorf("Expected action name to be 'Install Oh My Zsh', got '%s'", action.Name)
+	if action.Name != "Install Gitmoji" {
+		t.Errorf("Expected action name to be 'Install Gitmoji', got '%s'", action.Name)
 	}
 
-	if action.Description != "Install Oh My Zsh on the system" {
-		t.Errorf("Expected action description to be 'Install Oh My Zsh on the system', got '%s'", action.Description)
+	if action.Description != "Install Gitmoji" {
+		t.Errorf("Expected action description to be 'Install Gitmoji', got '%s'", action.Description)
 	}
 
 	if action.Type != actions.ActionTypeCommand {
 		t.Errorf("Expected action type to be '%s', got '%s'", actions.ActionTypeCommand, action.Type)
+	}
+
+	if action.SuccessMessage != "Gitmoji installed successfully! Run `gitmoji -g` to configure it." {
+		t.Errorf("Expected success message to be 'Gitmoji installed successfully! Run `gitmoji -g` to configure it.', got '%s'", action.SuccessMessage)
 	}
 
 	if action.PlatformCommands == nil {
@@ -39,10 +41,10 @@ func TestNewInstallOmz(t *testing.T) {
 	}
 }
 
-// TestInstallOmz_PlatformCommands tests that platform commands are correctly configured
+// TestNewInstallGitmojiAction_PlatformCommands tests that platform commands are correctly configured
 // This test only verifies the command strings without executing them
-func TestInstallOmz_PlatformCommands(t *testing.T) {
-	action := NewInstallOmz()
+func TestNewInstallGitmojiAction_PlatformCommands(t *testing.T) {
+	action := NewInstallGitmojiAction()
 
 	tests := []struct {
 		name            string
@@ -54,16 +56,16 @@ func TestInstallOmz_PlatformCommands(t *testing.T) {
 		{
 			name:            "Linux platform",
 			platform:        actions.PlatformLinux,
-			expectedCommand: `sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"`,
-			expectedSource:  actions.PackageSourceAny,
-			expectedCheck:   "which zsh && (test -d $HOME/.oh-my-zsh || which omz)",
+			expectedCommand: "brew install gitmoji",
+			expectedSource:  actions.PackageSourceBrew,
+			expectedCheck:   "gitmoji",
 		},
 		{
 			name:            "macOS platform",
 			platform:        actions.PlatformMacOS,
-			expectedCommand: `sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"`,
-			expectedSource:  actions.PackageSourceAny,
-			expectedCheck:   "which zsh && (test -d $HOME/.oh-my-zsh || which omz)",
+			expectedCommand: "brew install gitmoji",
+			expectedSource:  actions.PackageSourceBrew,
+			expectedCheck:   "gitmoji",
 		},
 	}
 
@@ -89,10 +91,10 @@ func TestInstallOmz_PlatformCommands(t *testing.T) {
 	}
 }
 
-// TestInstallOmz_UnsupportedPlatforms verifies that unsupported platforms don't have commands
+// TestNewInstallGitmojiAction_UnsupportedPlatforms verifies that unsupported platforms don't have commands
 // This prevents accidental execution on unsupported systems
-func TestInstallOmz_UnsupportedPlatforms(t *testing.T) {
-	action := NewInstallOmz()
+func TestNewInstallGitmojiAction_UnsupportedPlatforms(t *testing.T) {
+	action := NewInstallGitmojiAction()
 
 	// Test that unsupported platforms don't have commands
 	unsupportedPlatforms := []actions.Platform{
@@ -111,10 +113,10 @@ func TestInstallOmz_UnsupportedPlatforms(t *testing.T) {
 	}
 }
 
-// TestInstallOmz_ActionConsistency verifies that all platform commands have consistent structure
+// TestNewInstallGitmojiAction_ActionConsistency verifies that all platform commands have consistent structure
 // This ensures the action is properly configured for safe execution
-func TestInstallOmz_ActionConsistency(t *testing.T) {
-	action := NewInstallOmz()
+func TestNewInstallGitmojiAction_ActionConsistency(t *testing.T) {
+	action := NewInstallGitmojiAction()
 
 	// Verify that all platform commands have consistent structure
 	for platform, cmd := range action.PlatformCommands {
@@ -129,21 +131,15 @@ func TestInstallOmz_ActionConsistency(t *testing.T) {
 		if cmd.PackageSource == "" {
 			t.Errorf("Platform %s has empty package source", platform)
 		}
-
-		// Verify that check command is consistent across platforms
-		expectedCheck := "which zsh && (test -d $HOME/.oh-my-zsh || which omz)"
-		if cmd.CheckCommand != expectedCheck {
-			t.Errorf("Platform %s has unexpected check command '%s', expected '%s'", platform, cmd.CheckCommand, expectedCheck)
-		}
 	}
 }
 
-// TestInstallOmz_MultipleCalls tests that multiple calls return equivalent actions
+// TestNewInstallGitmojiAction_MultipleCalls tests that multiple calls return equivalent actions
 // This ensures the factory function is deterministic and safe
-func TestInstallOmz_MultipleCalls(t *testing.T) {
-	// Test that multiple calls to NewInstallOmz return equivalent actions
-	action1 := NewInstallOmz()
-	action2 := NewInstallOmz()
+func TestNewInstallGitmojiAction_MultipleCalls(t *testing.T) {
+	// Test that multiple calls to NewInstallGitmojiAction return equivalent actions
+	action1 := NewInstallGitmojiAction()
+	action2 := NewInstallGitmojiAction()
 
 	if action1.ID != action2.ID {
 		t.Errorf("Expected action IDs to be consistent, got '%s' and '%s'", action1.ID, action2.ID)
@@ -159,6 +155,10 @@ func TestInstallOmz_MultipleCalls(t *testing.T) {
 
 	if action1.Type != action2.Type {
 		t.Errorf("Expected action types to be consistent, got '%s' and '%s'", action1.Type, action2.Type)
+	}
+
+	if action1.SuccessMessage != action2.SuccessMessage {
+		t.Errorf("Expected success messages to be consistent, got '%s' and '%s'", action1.SuccessMessage, action2.SuccessMessage)
 	}
 
 	// Verify platform commands are equivalent
@@ -187,10 +187,10 @@ func TestInstallOmz_MultipleCalls(t *testing.T) {
 	}
 }
 
-// TestInstallOmz_ExpectedPlatforms verifies that only expected platforms are configured
+// TestNewInstallGitmojiAction_ExpectedPlatforms verifies that only expected platforms are configured
 // This prevents accidental execution on unexpected platforms
-func TestInstallOmz_ExpectedPlatforms(t *testing.T) {
-	action := NewInstallOmz()
+func TestNewInstallGitmojiAction_ExpectedPlatforms(t *testing.T) {
+	action := NewInstallGitmojiAction()
 
 	expectedPlatforms := []actions.Platform{
 		actions.PlatformLinux,
@@ -212,70 +212,55 @@ func TestInstallOmz_ExpectedPlatforms(t *testing.T) {
 	}
 }
 
-// TestInstallOmz_CommandStructure tests that the command uses the official Oh My Zsh install script
+// TestNewInstallGitmojiAction_CommandStructure tests that the command uses the correct brew install command
 // This verifies the command structure without executing it
-func TestInstallOmz_CommandStructure(t *testing.T) {
-	action := NewInstallOmz()
+func TestNewInstallGitmojiAction_CommandStructure(t *testing.T) {
+	action := NewInstallGitmojiAction()
 
-	// Test that the command uses the official Oh My Zsh install script
-	expectedCommand := `sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"`
+	// Test that the command uses the correct brew install command
+	expectedCommand := "brew install gitmoji"
 
 	for platform, cmd := range action.PlatformCommands {
 		if cmd.Command != expectedCommand {
 			t.Errorf("Platform %s has unexpected command structure: '%s'", platform, cmd.Command)
 		}
 
-		// Verify the command contains the expected URL
-		if !utils.Contains(cmd.Command, "https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh") {
-			t.Errorf("Platform %s command does not contain the expected Oh My Zsh install script URL", platform)
+		// Verify the command contains the expected brew install
+		if !utils.Contains(cmd.Command, "brew install") {
+			t.Errorf("Platform %s command does not use brew install", platform)
 		}
 
-		// Verify the command uses curl
-		if !utils.Contains(cmd.Command, "curl") {
-			t.Errorf("Platform %s command does not use curl", platform)
-		}
-
-		// Verify the command is executed with sh
-		if !utils.Contains(cmd.Command, "sh -c") {
-			t.Errorf("Platform %s command is not executed with sh", platform)
+		// Verify the command contains gitmoji
+		if !utils.Contains(cmd.Command, "gitmoji") {
+			t.Errorf("Platform %s command does not contain gitmoji", platform)
 		}
 	}
 }
 
-// TestInstallOmz_CheckCommandStructure tests that the check command properly checks for dependencies
+// TestNewInstallGitmojiAction_CheckCommandStructure tests that the check command properly checks for gitmoji
 // This ensures the action won't execute if prerequisites are not met
-func TestInstallOmz_CheckCommandStructure(t *testing.T) {
-	action := NewInstallOmz()
+func TestNewInstallGitmojiAction_CheckCommandStructure(t *testing.T) {
+	action := NewInstallGitmojiAction()
 
-	// Test that the check command properly checks for zsh dependency and Oh My Zsh installation
-	expectedCheck := "which zsh && (test -d $HOME/.oh-my-zsh || which omz)"
+	// Test that the check command properly checks for gitmoji
+	expectedCheck := "gitmoji"
 
 	for platform, cmd := range action.PlatformCommands {
 		if cmd.CheckCommand != expectedCheck {
 			t.Errorf("Platform %s has unexpected check command: '%s'", platform, cmd.CheckCommand)
 		}
 
-		// Verify the check command tests for zsh dependency first
-		if !utils.Contains(cmd.CheckCommand, "which zsh") {
-			t.Errorf("Platform %s check command does not test for zsh dependency", platform)
-		}
-
-		// Verify the check command tests for the .oh-my-zsh directory
-		if !utils.Contains(cmd.CheckCommand, "test -d $HOME/.oh-my-zsh") {
-			t.Errorf("Platform %s check command does not test for .oh-my-zsh directory", platform)
-		}
-
-		// Verify the check command also checks for omz command
-		if !utils.Contains(cmd.CheckCommand, "which omz") {
-			t.Errorf("Platform %s check command does not check for omz command", platform)
+		// Verify the check command tests for gitmoji
+		if !utils.Contains(cmd.CheckCommand, "gitmoji") {
+			t.Errorf("Platform %s check command should test for gitmoji", platform)
 		}
 	}
 }
 
-// TestInstallOmz_NoCommandExecution ensures that the test never executes actual commands
+// TestNewInstallGitmojiAction_NoCommandExecution ensures that the test never executes actual commands
 // This is a safety test to verify that we're only testing configuration, not execution
-func TestInstallOmz_NoCommandExecution(t *testing.T) {
-	action := NewInstallOmz()
+func TestNewInstallGitmojiAction_NoCommandExecution(t *testing.T) {
+	action := NewInstallGitmojiAction()
 
 	// Verify that the action is configured as a command type (not function)
 	if action.Type != actions.ActionTypeCommand {
@@ -293,10 +278,10 @@ func TestInstallOmz_NoCommandExecution(t *testing.T) {
 	}
 }
 
-// TestInstallOmz_SafeForCI verifies that the action is safe to use in CI environments
+// TestNewInstallGitmojiAction_SafeForCI verifies that the action is safe to use in CI environments
 // This test ensures no actual system commands will be executed during testing
-func TestInstallOmz_SafeForCI(t *testing.T) {
-	action := NewInstallOmz()
+func TestNewInstallGitmojiAction_SafeForCI(t *testing.T) {
+	action := NewInstallGitmojiAction()
 
 	// Verify the action has proper check commands to prevent unnecessary execution
 	for platform, cmd := range action.PlatformCommands {
@@ -305,35 +290,8 @@ func TestInstallOmz_SafeForCI(t *testing.T) {
 		}
 
 		// Verify check command includes dependency checks
-		if !utils.Contains(cmd.CheckCommand, "which zsh") {
-			t.Errorf("Platform %s check command should verify zsh dependency first", platform)
+		if !utils.Contains(cmd.CheckCommand, "gitmoji") {
+			t.Errorf("Platform %s check command should verify gitmoji dependency first", platform)
 		}
-	}
-}
-
-// TestInstallOmz_MockExecutorBehavior tests that the action can be safely used with a mock executor
-// This demonstrates how to properly mock the action execution without running actual commands
-func TestInstallOmz_MockExecutorBehavior(t *testing.T) {
-	action := NewInstallOmz()
-
-	// Create a mock executor that doesn't execute real commands
-	mockExecutor := testutil.NewMockExecutor(func(action *actions.Action) (string, error) {
-		// Verify the action structure without executing
-		if action.ID != "install_omz" {
-			return "", fmt.Errorf("unexpected action ID: %s", action.ID)
-		}
-
-		return "Oh My Zsh installation mocked successfully", nil
-	})
-
-	// Test that we can "execute" the action through the mock
-	result, err := mockExecutor.Execute(action)
-	if err != nil {
-		t.Errorf("Mock execution failed: %v", err)
-	}
-
-	expectedResult := "Oh My Zsh installation mocked successfully"
-	if result != expectedResult {
-		t.Errorf("Expected mock result '%s', got '%s'", expectedResult, result)
 	}
 }

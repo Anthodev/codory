@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"anthodev/codory/internal/actions"
+	"anthodev/codory/pkg/utils"
 )
 
 func TestNewUUIDv4Action(t *testing.T) {
@@ -45,11 +46,11 @@ func TestGenerateUUIDv4(t *testing.T) {
 	}
 
 	// Test that the result contains "Generated UUID:" and "copied to clipboard!"
-	if !contains(result, "Generated UUID:") {
+	if !utils.Contains(result, "Generated UUID:") {
 		t.Errorf("Expected result to contain 'Generated UUID:', got '%s'", result)
 	}
 
-	if !contains(result, "copied to clipboard!") {
+	if !utils.Contains(result, "copied to clipboard!") {
 		t.Errorf("Expected result to contain 'copied to clipboard!', got '%s'", result)
 	}
 
@@ -143,10 +144,7 @@ func TestUUIDv4ActionRegistration(t *testing.T) {
 	}
 }
 
-// Helper functions
-func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(s) > len(substr) && (s[:len(substr)] == substr || contains(s[1:], substr)))
-}
+// Helper functions - now using common utilities from pkg/utils
 
 func TestGenerateUUIDv4_UniqueGeneration(t *testing.T) {
 	// Test that multiple calls generate different UUIDs

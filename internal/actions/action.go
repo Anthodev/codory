@@ -42,26 +42,27 @@ type PlatformCommand struct {
 	CheckCommand  string
 }
 
-// Action represents an executable action
-type Action struct {
-	ID          string
+type ActionArgument struct {
 	Name        string
 	Description string
-	Type        ActionType
-	Handler     ActionHandler
-	Arguments   []ActionArgument
+	Required    bool
+}
+
+// Action represents an executable action
+type Action struct {
+	ID             string
+	Name           string
+	Description    string
+	Type           ActionType
+	Handler        ActionHandler
+	Arguments      []ActionArgument
+	SuccessMessage string
 
 	// For system commands (new structure)
 	PlatformCommands map[Platform]PlatformCommand
 
 	VisibleOnPlatforms []Platform
 	HiddenOnPlatforms  []Platform
-}
-
-type ActionArgument struct {
-	Name        string
-	Description string
-	Required    bool
 }
 
 // ActionHandler is a function that executes an action

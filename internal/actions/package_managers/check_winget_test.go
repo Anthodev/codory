@@ -7,6 +7,7 @@ import (
 
 	"anthodev/codory/internal/actions"
 	"anthodev/codory/internal/platform"
+	"anthodev/codory/pkg/utils"
 )
 
 func TestNewCheckWingetAction(t *testing.T) {
@@ -91,6 +92,7 @@ func TestCheckWinget_ValidationOnly(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			currentOS := platform.Detect()
+			// Skip if not running on the expected OS
 			if currentOS != tt.mockOS {
 				t.Skipf("Skipping test: expected OS %s, but running on %s", tt.mockOS, currentOS)
 			}
@@ -100,7 +102,7 @@ func TestCheckWinget_ValidationOnly(t *testing.T) {
 			if tt.wantErr {
 				if err == nil {
 					t.Errorf("Expected error but got none")
-				} else if tt.errContains != "" && !contains(err.Error(), tt.errContains) {
+				} else if tt.errContains != "" && !utils.Contains(err.Error(), tt.errContains) {
 					t.Errorf("Expected error to contain '%s', got '%s'", tt.errContains, err.Error())
 				}
 			} else {
@@ -133,7 +135,7 @@ func TestCheckWinget_PlatformValidationOnly(t *testing.T) {
 	if err == nil {
 		t.Error("Expected error when checking winget on non-Windows platform, got none")
 	}
-	if !contains(err.Error(), "winget is not supported on this platform") {
+	if !utils.Contains(err.Error(), "winget is not supported on this platform") {
 		t.Errorf("Expected error to contain 'winget is not supported on this platform', got: %v", err)
 	}
 	if result != "" {
@@ -189,6 +191,7 @@ func TestValidateCheckWinget(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			currentOS := platform.Detect()
+			// Skip if not running on the expected OS
 			if currentOS != tt.mockOS {
 				t.Skipf("Skipping test: expected OS %s, but running on %s", tt.mockOS, currentOS)
 			}
@@ -198,7 +201,7 @@ func TestValidateCheckWinget(t *testing.T) {
 			if tt.wantErr {
 				if err == nil {
 					t.Errorf("Expected error but got none")
-				} else if tt.errContains != "" && !contains(err.Error(), tt.errContains) {
+				} else if tt.errContains != "" && !utils.Contains(err.Error(), tt.errContains) {
 					t.Errorf("Expected error to contain '%s', got '%s'", tt.errContains, err.Error())
 				}
 			} else {
@@ -312,6 +315,7 @@ func TestCheckWinget_ContextCancellation(t *testing.T) {
 	defer os.Unsetenv("CODORY_TEST")
 
 	// Only test on Windows since other platforms fail validation first
+	// Skip if not on Windows platform
 	if platform.Detect() != platform.Windows {
 		t.Skip("Skipping context cancellation test on non-Windows platform")
 	}
@@ -327,11 +331,4 @@ func TestCheckWinget_ContextCancellation(t *testing.T) {
 	}
 }
 
-func containsSubstring(s, substr string) bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
-}
+// Helper functions - now using common utilities from pkg/utils

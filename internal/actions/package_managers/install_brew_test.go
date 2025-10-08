@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"anthodev/codory/internal/platform"
+	"anthodev/codory/pkg/utils"
 )
 
 func TestNewInstallBrewAction(t *testing.T) {
@@ -112,7 +113,7 @@ func TestInstallBrew_ValidationOnly(t *testing.T) {
 			if tt.wantErr {
 				if err == nil {
 					t.Errorf("Expected error but got none")
-				} else if tt.errContains != "" && !contains(err.Error(), tt.errContains) {
+				} else if tt.errContains != "" && !utils.Contains(err.Error(), tt.errContains) {
 					t.Errorf("Expected error to contain '%s', got '%s'", tt.errContains, err.Error())
 				}
 			} else {
@@ -155,7 +156,7 @@ func TestInstallBrew_PlatformValidationOnly(t *testing.T) {
 		if err == nil {
 			t.Error("Expected error when trying to install brew in test environment, got none")
 		}
-		if !contains(err.Error(), "skipping brew installation in test environment") {
+		if !utils.Contains(err.Error(), "skipping brew installation in test environment") {
 			t.Errorf("Expected error to contain 'skipping brew installation in test environment', got: %v", err)
 		}
 		if result != "" {
@@ -209,7 +210,7 @@ func TestValidateInstallBrewRequirements(t *testing.T) {
 			if tt.wantErr {
 				if err == nil {
 					t.Errorf("Expected error but got none")
-				} else if tt.errContains != "" && !contains(err.Error(), tt.errContains) {
+				} else if tt.errContains != "" && !utils.Contains(err.Error(), tt.errContains) {
 					t.Errorf("Expected error to contain '%s', got '%s'", tt.errContains, err.Error())
 				}
 			} else {

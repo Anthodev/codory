@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"anthodev/codory/internal/actions"
+	"anthodev/codory/pkg/utils"
 )
 
 func TestNewDecodeUUIDv7Action(t *testing.T) {
@@ -54,7 +55,7 @@ func TestDecodeUUIDv7(t *testing.T) {
 	}
 
 	expectedPrefix := "Datetime decoded for " + validUUIDv7 + ":"
-	if !contains(result, expectedPrefix) {
+	if !utils.Contains(result, expectedPrefix) {
 		t.Errorf("Expected result to start with '%s', got '%s'", expectedPrefix, result)
 	}
 
@@ -86,7 +87,7 @@ func TestDecodeUUIDv7_WithoutHyphens(t *testing.T) {
 	}
 
 	expectedPrefix := "Datetime decoded for " + validUUIDv7 + ":"
-	if !contains(result, expectedPrefix) {
+	if !utils.Contains(result, expectedPrefix) {
 		t.Errorf("Expected result to start with '%s', got '%s'", expectedPrefix, result)
 	}
 }
@@ -131,7 +132,7 @@ func TestDecodeUUIDv7_InvalidUUID(t *testing.T) {
 			if err == nil {
 				t.Errorf("Expected error for %s, got none", tc.name)
 			}
-			if err != nil && !contains(err.Error(), tc.expected) {
+			if err != nil && !utils.Contains(err.Error(), tc.expected) {
 				t.Errorf("Expected error containing '%s', got '%v'", tc.expected, err)
 			}
 		})
@@ -205,7 +206,7 @@ func TestUUID7stringToAtom(t *testing.T) {
 				if err != nil {
 					t.Errorf("Expected no error for %s, got %v", tc.name, err)
 				}
-				if tc.contains != "" && !contains(result, tc.contains) {
+				if tc.contains != "" && !utils.Contains(result, tc.contains) {
 					t.Errorf("Expected result to contain '%s', got '%s'", tc.contains, result)
 				}
 			}

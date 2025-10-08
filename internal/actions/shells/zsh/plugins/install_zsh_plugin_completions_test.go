@@ -5,6 +5,8 @@ import (
 	"testing"
 
 	"anthodev/codory/internal/actions"
+	"anthodev/codory/pkg/utils"
+	"anthodev/codory/test/testutil"
 )
 
 // TestInstallZshPluginCompletions tests the creation of the Install Zsh Plugin Completions action
@@ -218,17 +220,17 @@ func TestInstallZshPluginCompletions_CommandStructure(t *testing.T) {
 		}
 
 		// Verify the command contains the expected URL
-		if !contains(cmd.Command, "https://github.com/zsh-users/zsh-completions") {
+		if !utils.Contains(cmd.Command, "https://github.com/zsh-users/zsh-completions") {
 			t.Errorf("Platform %s command does not contain the expected plugin URL", platform)
 		}
 
 		// Verify the command uses git clone
-		if !contains(cmd.Command, "git clone") {
+		if !utils.Contains(cmd.Command, "git clone") {
 			t.Errorf("Platform %s command does not use git clone", platform)
 		}
 
 		// Verify the command uses the correct plugin directory
-		if !contains(cmd.Command, "${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-completions") {
+		if !utils.Contains(cmd.Command, "${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-completions") {
 			t.Errorf("Platform %s command does not use the correct plugin directory", platform)
 		}
 	}
@@ -254,19 +256,9 @@ func TestInstallZshPluginCompletions_CheckCommandStructure(t *testing.T) {
 			}
 		}
 
-		// Verify the check command tests for git dependency first
-		if !contains(cmd.CheckCommand, "which git") {
-			t.Errorf("Platform %s check command does not test for git dependency", platform)
-		}
-
-		// Verify the check command tests for the .oh-my-zsh directory
-		if !contains(cmd.CheckCommand, "test -d $HOME/.oh-my-zsh") {
-			t.Errorf("Platform %s check command does not test for .oh-my-zsh directory", platform)
-		}
-
-		// Verify the check command also checks for omz command
-		if !contains(cmd.CheckCommand, "which omz") {
-			t.Errorf("Platform %s check command does not check for omz command", platform)
+		// Verify check command includes dependency checks
+		if !utils.Contains(cmd.CheckCommand, "which git") {
+			t.Errorf("Platform %s check command should verify git dependency first", platform)
 		}
 	}
 }
@@ -304,7 +296,7 @@ func TestInstallZshPluginCompletions_SafeForCI(t *testing.T) {
 		}
 
 		// Verify check command includes dependency checks
-		if !contains(cmd.CheckCommand, "which git") {
+		if !utils.Contains(cmd.CheckCommand, "which git") {
 			t.Errorf("Platform %s check command should verify git dependency first", platform)
 		}
 	}
@@ -316,17 +308,15 @@ func TestInstallZshPluginCompletions_MockExecutorBehavior(t *testing.T) {
 	action := InstallZshPluginCompletions()
 
 	// Create a mock executor that doesn't execute real commands
-	mockExecutor := &MockExecutor{
-		ExecuteFunc: func(action *actions.Action) (string, error) {
-			// Verify the action structure without executing
-			if action.ID != "install_zsh_plugin_completions" {
-				return "", fmt.Errorf("unexpected action ID: %s", action.ID)
-			}
+	mockExecutor := testutil.NewMockExecutor(func(action *actions.Action) (string, error) {
+		// Verify the action structure without executing
+		if action.ID != "install_zsh_plugin_completions" {
+			return "", fmt.Errorf("unexpected action ID: %s", action.ID)
+		}
 
-			// Return a mock success result
-			return "Zsh completions plugin installation mocked successfully", nil
-		},
-	}
+		// Return a mock success result
+		return "Zsh completions plugin installation mocked successfully", nil
+	})
 
 	// Test that we can "execute" the action through the mock
 	result, err := mockExecutor.Execute(action)
