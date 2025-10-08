@@ -307,7 +307,7 @@ func TestExecutor_ExecuteCommand(t *testing.T) {
 				}
 				if result == "" {
 					t.Error("expected non-empty result")
-				} else if tt.shouldSkip && result != "Command already exists, skipping installation" {
+				} else if tt.shouldSkip && result != "Command or files already exist, skipping installation" {
 					t.Errorf("expected skip message, got %q", result)
 				}
 			}
@@ -393,7 +393,7 @@ func TestExecutor_ComplexShellCommands(t *testing.T) {
 				if err != nil {
 					t.Errorf("unexpected error: %v", err)
 				}
-				if tt.shouldSkip && result != "Command already exists, skipping installation" {
+				if tt.shouldSkip && result != "Command or files already exist, skipping installation" {
 					t.Errorf("expected skip message, got %q", result)
 				}
 			}
