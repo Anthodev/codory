@@ -33,16 +33,18 @@ func TestInit(t *testing.T) {
 	}
 
 	// Check if the expected actions are registered
-	if len(zshPluginsCategory.Actions) != 1 {
-		t.Fatalf("Expected 1 action in zsh_plugins category, got %d", len(zshPluginsCategory.Actions))
+	if len(zshPluginsCategory.Actions) != 2 {
+		t.Fatalf("Expected 2 actions in zsh_plugins category, got %d", len(zshPluginsCategory.Actions))
 	}
 
-	// Verify the action is present
+	// Verify both actions are present
 	var installHistorySearchAction *actions.Action
+	var installSyntaxHighlightingAction *actions.Action
 	for _, action := range zshPluginsCategory.Actions {
 		if action.ID == "install_zsh_plugin_history_search" {
 			installHistorySearchAction = action
-			break
+		} else if action.ID == "install_zsh_plugin_syntax_highlighting" {
+			installSyntaxHighlightingAction = action
 		}
 	}
 
@@ -50,8 +52,16 @@ func TestInit(t *testing.T) {
 		t.Error("install_zsh_plugin_history_search action not found in zsh_plugins category")
 	}
 
+	if installSyntaxHighlightingAction == nil {
+		t.Error("install_zsh_plugin_syntax_highlighting action not found in zsh_plugins category")
+	}
+
 	if installHistorySearchAction.Name != "Install Zsh Plugin zsh-history-substring-search" {
 		t.Errorf("Expected install_zsh_plugin_history_search action name to be 'Install Zsh Plugin zsh-history-substring-search', got '%s'", installHistorySearchAction.Name)
+	}
+
+	if installSyntaxHighlightingAction.Name != "Install Zsh Plugin zsh-syntax-highlighting" {
+		t.Errorf("Expected install_zsh_plugin_syntax_highlighting action name to be 'Install Zsh Plugin zsh-syntax-highlighting', got '%s'", installSyntaxHighlightingAction.Name)
 	}
 }
 
@@ -213,6 +223,10 @@ func TestZshPluginsActionsHaveCorrectTypes(t *testing.T) {
 			if action.Type != actions.ActionTypeCommand {
 				t.Errorf("Action %s should be of type Command, got %s", action.ID, action.Type)
 			}
+		case "install_zsh_plugin_syntax_highlighting":
+			if action.Type != actions.ActionTypeCommand {
+				t.Errorf("Action %s should be of type Command, got %s", action.ID, action.Type)
+			}
 		default:
 			t.Errorf("Unknown action %s with type %s", action.ID, action.Type)
 		}
@@ -241,22 +255,28 @@ func TestZshPluginsCategoryRegistrationVerification(t *testing.T) {
 		t.Errorf("Expected zsh_plugins category description to be 'Install plugins for oh-my-zsh', got '%s'", zshPluginsCategory.Description)
 	}
 
-	// Verify zsh_plugins category has the expected action
-	if len(zshPluginsCategory.Actions) != 1 {
-		t.Fatalf("Expected 1 action in zsh_plugins category, got %d", len(zshPluginsCategory.Actions))
+	// Verify zsh_plugins category has the expected actions
+	if len(zshPluginsCategory.Actions) != 2 {
+		t.Fatalf("Expected 2 actions in zsh_plugins category, got %d", len(zshPluginsCategory.Actions))
 	}
 
-	// Verify the action is present
+	// Verify both actions are present
 	var installHistorySearchAction *actions.Action
+	var installSyntaxHighlightingAction *actions.Action
 	for _, action := range zshPluginsCategory.Actions {
 		if action.ID == "install_zsh_plugin_history_search" {
 			installHistorySearchAction = action
-			break
+		} else if action.ID == "install_zsh_plugin_syntax_highlighting" {
+			installSyntaxHighlightingAction = action
 		}
 	}
 
 	if installHistorySearchAction == nil {
 		t.Error("install_zsh_plugin_history_search action not found in zsh_plugins category")
+	}
+
+	if installSyntaxHighlightingAction == nil {
+		t.Error("install_zsh_plugin_syntax_highlighting action not found in zsh_plugins category")
 	}
 
 	// Verify zsh_plugins category is hidden on Windows
