@@ -7,25 +7,25 @@ import (
 	"anthodev/codory/internal/actions"
 )
 
-// TestNewInstallOmz tests the creation of the Install Oh My Zsh action
+// TestInstallZshPluginHistorySearch tests the creation of the Install Zsh Plugin History Search action
 // This test verifies the action configuration without executing any actual commands
-func TestNewInstallOmz(t *testing.T) {
-	action := NewInstallOmz()
+func TestInstallZshPluginHistorySearch(t *testing.T) {
+	action := InstallZshPluginHistorySearch()
 
 	if action == nil {
-		t.Fatal("NewInstallOmz() returned nil")
+		t.Fatal("InstallZshPluginHistorySearch() returned nil")
 	}
 
-	if action.ID != "install_omz" {
-		t.Errorf("Expected action ID to be 'install_omz', got '%s'", action.ID)
+	if action.ID != "install_zsh_plugin_history_search" {
+		t.Errorf("Expected action ID to be 'install_zsh_plugin_history_search', got '%s'", action.ID)
 	}
 
-	if action.Name != "Install Oh My Zsh" {
-		t.Errorf("Expected action name to be 'Install Oh My Zsh', got '%s'", action.Name)
+	if action.Name != "Install Zsh Plugin zsh-history-substring-search" {
+		t.Errorf("Expected action name to be 'Install Zsh Plugin zsh-history-substring-search', got '%s'", action.Name)
 	}
 
-	if action.Description != "Install Oh My Zsh on the system" {
-		t.Errorf("Expected action description to be 'Install Oh My Zsh on the system', got '%s'", action.Description)
+	if action.Description != "Installs the zsh-history-substring-search plugin" {
+		t.Errorf("Expected action description to be 'Installs the zsh-history-substring-search plugin', got '%s'", action.Description)
 	}
 
 	if action.Type != actions.ActionTypeCommand {
@@ -37,10 +37,10 @@ func TestNewInstallOmz(t *testing.T) {
 	}
 }
 
-// TestInstallOmz_PlatformCommands tests that platform commands are correctly configured
+// TestInstallZshPluginHistorySearch_PlatformCommands tests that platform commands are correctly configured
 // This test only verifies the command strings without executing them
-func TestInstallOmz_PlatformCommands(t *testing.T) {
-	action := NewInstallOmz()
+func TestInstallZshPluginHistorySearch_PlatformCommands(t *testing.T) {
+	action := InstallZshPluginHistorySearch()
 
 	tests := []struct {
 		name            string
@@ -52,16 +52,16 @@ func TestInstallOmz_PlatformCommands(t *testing.T) {
 		{
 			name:            "Linux platform",
 			platform:        actions.PlatformLinux,
-			expectedCommand: `sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"`,
+			expectedCommand: " git clone https://github.com/zsh-users/zsh-history-substring-search ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-history-substring-search",
 			expectedSource:  actions.PackageSourceAny,
-			expectedCheck:   "which zsh && (test -d $HOME/.oh-my-zsh || which omz)",
+			expectedCheck:   "which git && (test -d $HOME/.oh-my-zsh || which omz)",
 		},
 		{
 			name:            "macOS platform",
 			platform:        actions.PlatformMacOS,
-			expectedCommand: `sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"`,
+			expectedCommand: " git clone https://github.com/zsh-users/zsh-history-substring-search ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-history-substring-search",
 			expectedSource:  actions.PackageSourceAny,
-			expectedCheck:   "which zsh && (test -d $HOME/.oh-my-zsh || which omz)",
+			expectedCheck:   "which git && (test -d $HOME/.oh-my-zsh || which omz) && test -d ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-history-substring-search",
 		},
 	}
 
@@ -87,10 +87,10 @@ func TestInstallOmz_PlatformCommands(t *testing.T) {
 	}
 }
 
-// TestInstallOmz_UnsupportedPlatforms verifies that unsupported platforms don't have commands
+// TestInstallZshPluginHistorySearch_UnsupportedPlatforms verifies that unsupported platforms don't have commands
 // This prevents accidental execution on unsupported systems
-func TestInstallOmz_UnsupportedPlatforms(t *testing.T) {
-	action := NewInstallOmz()
+func TestInstallZshPluginHistorySearch_UnsupportedPlatforms(t *testing.T) {
+	action := InstallZshPluginHistorySearch()
 
 	// Test that unsupported platforms don't have commands
 	unsupportedPlatforms := []actions.Platform{
@@ -109,10 +109,10 @@ func TestInstallOmz_UnsupportedPlatforms(t *testing.T) {
 	}
 }
 
-// TestInstallOmz_ActionConsistency verifies that all platform commands have consistent structure
+// TestInstallZshPluginHistorySearch_ActionConsistency verifies that all platform commands have consistent structure
 // This ensures the action is properly configured for safe execution
-func TestInstallOmz_ActionConsistency(t *testing.T) {
-	action := NewInstallOmz()
+func TestInstallZshPluginHistorySearch_ActionConsistency(t *testing.T) {
+	action := InstallZshPluginHistorySearch()
 
 	// Verify that all platform commands have consistent structure
 	for platform, cmd := range action.PlatformCommands {
@@ -127,21 +127,15 @@ func TestInstallOmz_ActionConsistency(t *testing.T) {
 		if cmd.PackageSource == "" {
 			t.Errorf("Platform %s has empty package source", platform)
 		}
-
-		// Verify that check command is consistent across platforms
-		expectedCheck := "which zsh && (test -d $HOME/.oh-my-zsh || which omz)"
-		if cmd.CheckCommand != expectedCheck {
-			t.Errorf("Platform %s has unexpected check command '%s', expected '%s'", platform, cmd.CheckCommand, expectedCheck)
-		}
 	}
 }
 
-// TestInstallOmz_MultipleCalls tests that multiple calls return equivalent actions
+// TestInstallZshPluginHistorySearch_MultipleCalls tests that multiple calls return equivalent actions
 // This ensures the factory function is deterministic and safe
-func TestInstallOmz_MultipleCalls(t *testing.T) {
-	// Test that multiple calls to NewInstallOmz return equivalent actions
-	action1 := NewInstallOmz()
-	action2 := NewInstallOmz()
+func TestInstallZshPluginHistorySearch_MultipleCalls(t *testing.T) {
+	// Test that multiple calls to InstallZshPluginHistorySearch return equivalent actions
+	action1 := InstallZshPluginHistorySearch()
+	action2 := InstallZshPluginHistorySearch()
 
 	if action1.ID != action2.ID {
 		t.Errorf("Expected action IDs to be consistent, got '%s' and '%s'", action1.ID, action2.ID)
@@ -185,10 +179,10 @@ func TestInstallOmz_MultipleCalls(t *testing.T) {
 	}
 }
 
-// TestInstallOmz_ExpectedPlatforms verifies that only expected platforms are configured
+// TestInstallZshPluginHistorySearch_ExpectedPlatforms verifies that only expected platforms are configured
 // This prevents accidental execution on unexpected platforms
-func TestInstallOmz_ExpectedPlatforms(t *testing.T) {
-	action := NewInstallOmz()
+func TestInstallZshPluginHistorySearch_ExpectedPlatforms(t *testing.T) {
+	action := InstallZshPluginHistorySearch()
 
 	expectedPlatforms := []actions.Platform{
 		actions.PlatformLinux,
@@ -210,13 +204,13 @@ func TestInstallOmz_ExpectedPlatforms(t *testing.T) {
 	}
 }
 
-// TestInstallOmz_CommandStructure tests that the command uses the official Oh My Zsh install script
+// TestInstallZshPluginHistorySearch_CommandStructure tests that the command uses the correct git clone command
 // This verifies the command structure without executing it
-func TestInstallOmz_CommandStructure(t *testing.T) {
-	action := NewInstallOmz()
+func TestInstallZshPluginHistorySearch_CommandStructure(t *testing.T) {
+	action := InstallZshPluginHistorySearch()
 
-	// Test that the command uses the official Oh My Zsh install script
-	expectedCommand := `sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"`
+	// Test that the command uses the correct git clone command
+	expectedCommand := " git clone https://github.com/zsh-users/zsh-history-substring-search ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-history-substring-search"
 
 	for platform, cmd := range action.PlatformCommands {
 		if cmd.Command != expectedCommand {
@@ -224,38 +218,45 @@ func TestInstallOmz_CommandStructure(t *testing.T) {
 		}
 
 		// Verify the command contains the expected URL
-		if !contains(cmd.Command, "https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh") {
-			t.Errorf("Platform %s command does not contain the expected Oh My Zsh install script URL", platform)
+		if !contains(cmd.Command, "https://github.com/zsh-users/zsh-history-substring-search") {
+			t.Errorf("Platform %s command does not contain the expected plugin URL", platform)
 		}
 
-		// Verify the command uses curl
-		if !contains(cmd.Command, "curl") {
-			t.Errorf("Platform %s command does not use curl", platform)
+		// Verify the command uses git clone
+		if !contains(cmd.Command, "git clone") {
+			t.Errorf("Platform %s command does not use git clone", platform)
 		}
 
-		// Verify the command is executed with sh
-		if !contains(cmd.Command, "sh -c") {
-			t.Errorf("Platform %s command is not executed with sh", platform)
+		// Verify the command uses the correct plugin directory
+		if !contains(cmd.Command, "${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-history-substring-search") {
+			t.Errorf("Platform %s command does not use the correct plugin directory", platform)
 		}
 	}
 }
 
-// TestInstallOmz_CheckCommandStructure tests that the check command properly checks for dependencies
+// TestInstallZshPluginHistorySearch_CheckCommandStructure tests that the check command properly checks for dependencies
 // This ensures the action won't execute if prerequisites are not met
-func TestInstallOmz_CheckCommandStructure(t *testing.T) {
-	action := NewInstallOmz()
+func TestInstallZshPluginHistorySearch_CheckCommandStructure(t *testing.T) {
+	action := InstallZshPluginHistorySearch()
 
-	// Test that the check command properly checks for zsh dependency and Oh My Zsh installation
-	expectedCheck := "which zsh && (test -d $HOME/.oh-my-zsh || which omz)"
+	// Test that the check command properly checks for git dependency and Oh My Zsh installation
+	expectedCheckLinux := "which git && (test -d $HOME/.oh-my-zsh || which omz)"
+	expectedCheckMacOS := "which git && (test -d $HOME/.oh-my-zsh || which omz) && test -d ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-history-substring-search"
 
 	for platform, cmd := range action.PlatformCommands {
-		if cmd.CheckCommand != expectedCheck {
-			t.Errorf("Platform %s has unexpected check command: '%s'", platform, cmd.CheckCommand)
+		if platform == actions.PlatformLinux {
+			if cmd.CheckCommand != expectedCheckLinux {
+				t.Errorf("Platform %s has unexpected check command: '%s'", platform, cmd.CheckCommand)
+			}
+		} else if platform == actions.PlatformMacOS {
+			if cmd.CheckCommand != expectedCheckMacOS {
+				t.Errorf("Platform %s has unexpected check command: '%s'", platform, cmd.CheckCommand)
+			}
 		}
 
-		// Verify the check command tests for zsh dependency first
-		if !contains(cmd.CheckCommand, "which zsh") {
-			t.Errorf("Platform %s check command does not test for zsh dependency", platform)
+		// Verify the check command tests for git dependency first
+		if !contains(cmd.CheckCommand, "which git") {
+			t.Errorf("Platform %s check command does not test for git dependency", platform)
 		}
 
 		// Verify the check command tests for the .oh-my-zsh directory
@@ -270,10 +271,10 @@ func TestInstallOmz_CheckCommandStructure(t *testing.T) {
 	}
 }
 
-// TestInstallOmz_NoCommandExecution ensures that the test never executes actual commands
+// TestInstallZshPluginHistorySearch_NoCommandExecution ensures that the test never executes actual commands
 // This is a safety test to verify that we're only testing configuration, not execution
-func TestInstallOmz_NoCommandExecution(t *testing.T) {
-	action := NewInstallOmz()
+func TestInstallZshPluginHistorySearch_NoCommandExecution(t *testing.T) {
+	action := InstallZshPluginHistorySearch()
 
 	// Verify that the action is configured as a command type (not function)
 	if action.Type != actions.ActionTypeCommand {
@@ -291,10 +292,10 @@ func TestInstallOmz_NoCommandExecution(t *testing.T) {
 	}
 }
 
-// TestInstallOmz_SafeForCI verifies that the action is safe to use in CI environments
+// TestInstallZshPluginHistorySearch_SafeForCI verifies that the action is safe to use in CI environments
 // This test ensures no actual system commands will be executed during testing
-func TestInstallOmz_SafeForCI(t *testing.T) {
-	action := NewInstallOmz()
+func TestInstallZshPluginHistorySearch_SafeForCI(t *testing.T) {
+	action := InstallZshPluginHistorySearch()
 
 	// Verify the action has proper check commands to prevent unnecessary execution
 	for platform, cmd := range action.PlatformCommands {
@@ -303,27 +304,27 @@ func TestInstallOmz_SafeForCI(t *testing.T) {
 		}
 
 		// Verify check command includes dependency checks
-		if !contains(cmd.CheckCommand, "which zsh") {
-			t.Errorf("Platform %s check command should verify zsh dependency first", platform)
+		if !contains(cmd.CheckCommand, "which git") {
+			t.Errorf("Platform %s check command should verify git dependency first", platform)
 		}
 	}
 }
 
-// TestInstallOmz_MockExecutorBehavior tests that the action can be safely used with a mock executor
+// TestInstallZshPluginHistorySearch_MockExecutorBehavior tests that the action can be safely used with a mock executor
 // This demonstrates how to properly mock the action execution without running actual commands
-func TestInstallOmz_MockExecutorBehavior(t *testing.T) {
-	action := NewInstallOmz()
+func TestInstallZshPluginHistorySearch_MockExecutorBehavior(t *testing.T) {
+	action := InstallZshPluginHistorySearch()
 
 	// Create a mock executor that doesn't execute real commands
 	mockExecutor := &MockExecutor{
 		ExecuteFunc: func(action *actions.Action) (string, error) {
 			// Verify the action structure without executing
-			if action.ID != "install_omz" {
+			if action.ID != "install_zsh_plugin_history_search" {
 				return "", fmt.Errorf("unexpected action ID: %s", action.ID)
 			}
 
 			// Return a mock success result
-			return "Oh My Zsh installation mocked successfully", nil
+			return "Zsh history substring search plugin installation mocked successfully", nil
 		},
 	}
 
@@ -333,7 +334,7 @@ func TestInstallOmz_MockExecutorBehavior(t *testing.T) {
 		t.Errorf("Mock execution failed: %v", err)
 	}
 
-	expectedResult := "Oh My Zsh installation mocked successfully"
+	expectedResult := "Zsh history substring search plugin installation mocked successfully"
 	if result != expectedResult {
 		t.Errorf("Expected mock result '%s', got '%s'", expectedResult, result)
 	}

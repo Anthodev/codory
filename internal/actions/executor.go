@@ -67,7 +67,7 @@ func (e *Executor) executeCommand(ctx context.Context, action *Action) (string, 
 	// Check if the command exists already
 	if platformCmd.CheckCommand != "" {
 		if commandExists(platformCmd.CheckCommand) {
-			return "Command already exists, skipping installation", nil
+			return "Command or files already exist, skipping installation", nil
 		}
 	}
 
