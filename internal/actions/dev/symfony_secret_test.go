@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"anthodev/codory/internal/actions"
+	"anthodev/codory/pkg/utils"
 )
 
 func TestNewSymfonySecretAction(t *testing.T) {
@@ -45,11 +46,11 @@ func TestGenerateSymfonySecret(t *testing.T) {
 	}
 
 	// Test that the result contains "Generated Symfony secret:" and "copied to clipboard!"
-	if !contains(result, "Generated Symfony secret:") {
+	if !utils.Contains(result, "Generated Symfony secret:") {
 		t.Errorf("Expected result to contain 'Generated Symfony secret:', got '%s'", result)
 	}
 
-	if !contains(result, "copied to clipboard!") {
+	if !utils.Contains(result, "copied to clipboard!") {
 		t.Errorf("Expected result to contain 'copied to clipboard!', got '%s'", result)
 	}
 

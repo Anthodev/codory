@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"anthodev/codory/internal/platform"
+	"anthodev/codory/pkg/utils"
 )
 
 func TestNewInstallYayAction(t *testing.T) {
@@ -122,7 +123,7 @@ func TestInstallYay_ValidationOnly(t *testing.T) {
 			if tt.wantErr {
 				if err == nil {
 					t.Errorf("Expected error but got none")
-				} else if tt.errContains != "" && !contains(err.Error(), tt.errContains) {
+				} else if tt.errContains != "" && !utils.Contains(err.Error(), tt.errContains) {
 					t.Errorf("Expected error to contain '%s', got '%s'", tt.errContains, err.Error())
 				}
 			} else {
@@ -197,7 +198,7 @@ func TestInstallYay_ArchValidationOnly(t *testing.T) {
 		if err == nil {
 			t.Error("Expected error when trying to install yay in test environment, got none")
 		}
-		if !contains(err.Error(), "skipping yay installation in test environment") {
+		if !utils.Contains(err.Error(), "skipping yay installation in test environment") {
 			t.Errorf("Expected error to contain 'skipping yay installation in test environment', got: %v", err)
 		}
 		if result != "" {
@@ -245,7 +246,7 @@ func TestValidateInstallYayRequirements(t *testing.T) {
 			if tt.wantErr {
 				if err == nil {
 					t.Errorf("Expected error but got none")
-				} else if tt.errContains != "" && !contains(err.Error(), tt.errContains) {
+				} else if tt.errContains != "" && !utils.Contains(err.Error(), tt.errContains) {
 					t.Errorf("Expected error to contain '%s', got '%s'", tt.errContains, err.Error())
 				}
 			} else {
@@ -309,7 +310,7 @@ func TestInstallYay_ErrorMessageFormatting(t *testing.T) {
 			if tt.wantErr {
 				if err == nil {
 					t.Errorf("Expected error but got none")
-				} else if tt.errContains != "" && !contains(err.Error(), tt.errContains) {
+				} else if tt.errContains != "" && !utils.Contains(err.Error(), tt.errContains) {
 					t.Errorf("Expected error to contain '%s', got '%s'", tt.errContains, err.Error())
 				}
 
@@ -342,7 +343,7 @@ func TestInstallYay_ValidateInstallYayRequirements_ErrorWrapping(t *testing.T) {
 
 	// Test that the error is properly formatted
 	expectedMsg := "yay can only be installed on Arch Linux"
-	if err != nil && !contains(err.Error(), expectedMsg) {
+	if err != nil && !utils.Contains(err.Error(), expectedMsg) {
 		t.Errorf("Expected error to contain '%s', got '%s'", expectedMsg, err.Error())
 	}
 }
@@ -370,15 +371,12 @@ func TestInstallYay_InstallYay_ErrorWrapping(t *testing.T) {
 	}
 
 	// Test that the error message is properly formatted
-	if err != nil && !contains(err.Error(), "skipping yay installation in test environment") {
+	if err != nil && !utils.Contains(err.Error(), "skipping yay installation in test environment") {
 		t.Errorf("Expected error to contain 'skipping yay installation in test environment', got: %v", err)
 	}
 }
 
-// Helper function
-func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(s) > len(substr) && (s[:len(substr)] == substr || contains(s[1:], substr)))
-}
+// Helper functions - now using common utilities from pkg/utils
 
 // Test helper function to verify string contains functionality
 func TestContainsHelper(t *testing.T) {
@@ -399,7 +397,7 @@ func TestContainsHelper(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("contains(%q, %q)", tt.s, tt.substr), func(t *testing.T) {
-			got := contains(tt.s, tt.substr)
+			got := utils.Contains(tt.s, tt.substr)
 			if got != tt.want {
 				t.Errorf("contains(%q, %q) = %v, want %v", tt.s, tt.substr, got, tt.want)
 			}

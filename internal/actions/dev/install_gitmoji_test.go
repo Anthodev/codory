@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"anthodev/codory/internal/actions"
+	"anthodev/codory/pkg/utils"
 )
 
 // TestNewInstallGitmojiAction tests the creation of the Install Gitmoji action
@@ -225,12 +226,12 @@ func TestNewInstallGitmojiAction_CommandStructure(t *testing.T) {
 		}
 
 		// Verify the command contains the expected brew install
-		if !contains(cmd.Command, "brew install") {
+		if !utils.Contains(cmd.Command, "brew install") {
 			t.Errorf("Platform %s command does not use brew install", platform)
 		}
 
 		// Verify the command contains gitmoji
-		if !contains(cmd.Command, "gitmoji") {
+		if !utils.Contains(cmd.Command, "gitmoji") {
 			t.Errorf("Platform %s command does not contain gitmoji", platform)
 		}
 	}
@@ -250,7 +251,7 @@ func TestNewInstallGitmojiAction_CheckCommandStructure(t *testing.T) {
 		}
 
 		// Verify the check command tests for gitmoji
-		if !contains(cmd.CheckCommand, "gitmoji") {
+		if !utils.Contains(cmd.CheckCommand, "gitmoji") {
 			t.Errorf("Platform %s check command should test for gitmoji", platform)
 		}
 	}
@@ -289,7 +290,7 @@ func TestNewInstallGitmojiAction_SafeForCI(t *testing.T) {
 		}
 
 		// Verify check command includes dependency checks
-		if !contains(cmd.CheckCommand, "gitmoji") {
+		if !utils.Contains(cmd.CheckCommand, "gitmoji") {
 			t.Errorf("Platform %s check command should verify gitmoji dependency first", platform)
 		}
 	}

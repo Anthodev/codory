@@ -5,6 +5,8 @@ import (
 	"testing"
 
 	"anthodev/codory/internal/actions"
+	"anthodev/codory/pkg/utils"
+	"anthodev/codory/test/testutil"
 )
 
 // TestNewInstallOmz tests the creation of the Install Oh My Zsh action
@@ -224,17 +226,17 @@ func TestInstallOmz_CommandStructure(t *testing.T) {
 		}
 
 		// Verify the command contains the expected URL
-		if !contains(cmd.Command, "https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh") {
+		if !utils.Contains(cmd.Command, "https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh") {
 			t.Errorf("Platform %s command does not contain the expected Oh My Zsh install script URL", platform)
 		}
 
 		// Verify the command uses curl
-		if !contains(cmd.Command, "curl") {
+		if !utils.Contains(cmd.Command, "curl") {
 			t.Errorf("Platform %s command does not use curl", platform)
 		}
 
 		// Verify the command is executed with sh
-		if !contains(cmd.Command, "sh -c") {
+		if !utils.Contains(cmd.Command, "sh -c") {
 			t.Errorf("Platform %s command is not executed with sh", platform)
 		}
 	}
@@ -254,17 +256,17 @@ func TestInstallOmz_CheckCommandStructure(t *testing.T) {
 		}
 
 		// Verify the check command tests for zsh dependency first
-		if !contains(cmd.CheckCommand, "which zsh") {
+		if !utils.Contains(cmd.CheckCommand, "which zsh") {
 			t.Errorf("Platform %s check command does not test for zsh dependency", platform)
 		}
 
 		// Verify the check command tests for the .oh-my-zsh directory
-		if !contains(cmd.CheckCommand, "test -d $HOME/.oh-my-zsh") {
+		if !utils.Contains(cmd.CheckCommand, "test -d $HOME/.oh-my-zsh") {
 			t.Errorf("Platform %s check command does not test for .oh-my-zsh directory", platform)
 		}
 
 		// Verify the check command also checks for omz command
-		if !contains(cmd.CheckCommand, "which omz") {
+		if !utils.Contains(cmd.CheckCommand, "which omz") {
 			t.Errorf("Platform %s check command does not check for omz command", platform)
 		}
 	}
@@ -303,7 +305,7 @@ func TestInstallOmz_SafeForCI(t *testing.T) {
 		}
 
 		// Verify check command includes dependency checks
-		if !contains(cmd.CheckCommand, "which zsh") {
+		if !utils.Contains(cmd.CheckCommand, "which zsh") {
 			t.Errorf("Platform %s check command should verify zsh dependency first", platform)
 		}
 	}
@@ -315,17 +317,14 @@ func TestInstallOmz_MockExecutorBehavior(t *testing.T) {
 	action := NewInstallOmz()
 
 	// Create a mock executor that doesn't execute real commands
-	mockExecutor := &MockExecutor{
-		ExecuteFunc: func(action *actions.Action) (string, error) {
-			// Verify the action structure without executing
-			if action.ID != "install_omz" {
-				return "", fmt.Errorf("unexpected action ID: %s", action.ID)
-			}
+	mockExecutor := testutil.NewMockExecutor(func(action *actions.Action) (string, error) {
+		// Verify the action structure without executing
+		if action.ID != "install_omz" {
+			return "", fmt.Errorf("unexpected action ID: %s", action.ID)
+		}
 
-			// Return a mock success result
-			return "Oh My Zsh installation mocked successfully", nil
-		},
-	}
+		return "Oh My Zsh installation mocked successfully", nil
+	})
 
 	// Test that we can "execute" the action through the mock
 	result, err := mockExecutor.Execute(action)
@@ -337,30 +336,4 @@ func TestInstallOmz_MockExecutorBehavior(t *testing.T) {
 	if result != expectedResult {
 		t.Errorf("Expected mock result '%s', got '%s'", expectedResult, result)
 	}
-}
-
-// MockExecutor is a test double that simulates action execution without running actual commands
-type MockExecutor struct {
-	ExecuteFunc func(*actions.Action) (string, error)
-}
-
-func (m *MockExecutor) Execute(action *actions.Action) (string, error) {
-	if m.ExecuteFunc != nil {
-		return m.ExecuteFunc(action)
-	}
-	return "", fmt.Errorf("no execute function defined")
-}
-
-// Helper function to check if a string contains a substring
-func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(s) > len(substr) && (s[:len(substr)] == substr || s[len(s)-len(substr):] == substr || containsSubstring(s, substr)))
-}
-
-func containsSubstring(s, substr string) bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
 }

@@ -77,7 +77,7 @@ func TestDetectInfo(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			// Set environment variables
+			// Set environment variables with proper cleanup
 			for k, v := range tc.env {
 				os.Setenv(k, v)
 				defer os.Unsetenv(k)

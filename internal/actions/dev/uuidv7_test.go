@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"anthodev/codory/internal/actions"
+	"anthodev/codory/pkg/utils"
 )
 
 func TestNewUUIDv7Action(t *testing.T) {
@@ -45,11 +46,11 @@ func TestGenerateUUIDv7(t *testing.T) {
 	}
 
 	// Test that the result contains "Generated UUIDv7:" and "copied to clipboard!"
-	if !contains(result, "Generated UUIDv7:") {
+	if !utils.Contains(result, "Generated UUIDv7:") {
 		t.Errorf("Expected result to contain 'Generated UUIDv7:', got '%s'", result)
 	}
 
-	if !contains(result, "copied to clipboard!") {
+	if !utils.Contains(result, "copied to clipboard!") {
 		t.Errorf("Expected result to contain 'copied to clipboard!', got '%s'", result)
 	}
 
