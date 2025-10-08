@@ -71,8 +71,8 @@ func TestInit(t *testing.T) {
 		t.Errorf("Expected install_zsh_plugin_syntax_highlighting action name to be 'Install Zsh Plugin zsh-syntax-highlighting', got '%s'", installSyntaxHighlightingAction.Name)
 	}
 
-	if installAutosuggestionsAction.Name != "Install Zsh Plugin Autosuggestions" {
-		t.Errorf("Expected install_zsh_plugin_autosuggestions action name to be 'Install Zsh Plugin Autosuggestions', got '%s'", installAutosuggestionsAction.Name)
+	if installAutosuggestionsAction.Name != "Install Zsh Plugin zsh-autosuggestions" {
+		t.Errorf("Expected install_zsh_plugin_autosuggestions action name to be 'Install Zsh Plugin zsh-autosuggestions', got '%s'", installAutosuggestionsAction.Name)
 	}
 }
 

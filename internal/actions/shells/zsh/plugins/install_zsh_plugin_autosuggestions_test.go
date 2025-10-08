@@ -20,8 +20,8 @@ func TestInstallZshPluginAutosuggestions(t *testing.T) {
 		t.Errorf("Expected action ID to be 'install_zsh_plugin_autosuggestions', got '%s'", action.ID)
 	}
 
-	if action.Name != "Install Zsh Plugin Autosuggestions" {
-		t.Errorf("Expected action name to be 'Install Zsh Plugin Autosuggestions', got '%s'", action.Name)
+	if action.Name != "Install Zsh Plugin zsh-autosuggestions" {
+		t.Errorf("Expected action name to be 'Install Zsh Plugin zsh-autosuggestions', got '%s'", action.Name)
 	}
 
 	if action.Description != "Install the zsh-autosuggestions plugin for oh-my-zsh" {
