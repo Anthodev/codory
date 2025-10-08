@@ -7,8 +7,8 @@ A cross-platform CLI application built with Bubble Tea for managing various deve
 - 🎯 **Smart Category System**: Categories and actions automatically adapt to your platform
 - 🔧 **Extensible Action System**: Easily add new actions without modifying existing code
 - 🌍 **True Multi-Platform Support**:
-  - 🐧 **Linux** (Debian/Ubuntu, Arch)
-    - 📦 APT, Pacman, Yay (AUR), Homebrew support
+  - 🐧 **Linux**
+    - 📦 APT (Debian-based), Pacman (Arch-based), Yay (AUR) (Arch-based), Homebrew support (with auto-installation)
   - 🍎 **macOS**
     - 🍺 Homebrew support (with auto-installation)
   - 🪟 **Windows**
@@ -19,11 +19,11 @@ A cross-platform CLI application built with Bubble Tea for managing various deve
 
 ## Platform Support
 
-| Feature | Linux (Debian) | Linux (Arch) | macOS | Windows |
-|---------|----------------|--------------|-------|---------|
-| Package Managers | APT | Pacman/Yay/Homebrew | Homebrew | Winget |
-| Auto-install PM | ❌ | ✅ Yay | ✅ Brew | ❌* |
-| Cross-Platform Tools | ✅ | ✅ | ✅ | ✅ |
+| Feature | Linux | macOS | Windows |
+|---------|-------|-------|---------|
+| Package Managers | APT (Debian-based)/Pacman (Arch-based)/Yay (Arch-based)/Homebrew | Homebrew | Winget |
+| Auto-install PM | ✅ Yay/Brew | ✅ Brew | ❌* |
+| Cross-Platform Tools | ✅ | ✅ | ✅ |
 
 *Winget must be installed manually via Microsoft Store
 

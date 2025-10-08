@@ -5,7 +5,7 @@ import "anthodev/codory/internal/actions"
 func InstallZshPluginAutosuggestions() *actions.Action {
 	return &actions.Action{
 		ID:          "install_zsh_plugin_autosuggestions",
-		Name:        "Install Zsh Plugin Autosuggestions",
+		Name:        "Install Zsh Plugin zsh-autosuggestions",
 		Description: "Install the zsh-autosuggestions plugin for oh-my-zsh",
 		Type:        actions.ActionTypeCommand,
 		PlatformCommands: map[actions.Platform]actions.PlatformCommand{
