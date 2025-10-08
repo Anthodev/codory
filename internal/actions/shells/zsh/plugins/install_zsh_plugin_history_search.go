@@ -12,7 +12,7 @@ func InstallZshPluginHistorySearch() *actions.Action {
 			actions.PlatformLinux: {
 				Command:       " git clone https://github.com/zsh-users/zsh-history-substring-search ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-history-substring-search",
 				PackageSource: actions.PackageSourceAny,
-				CheckCommand:  "which git && (test -d $HOME/.oh-my-zsh || which omz)",
+				CheckCommand:  "which git && (test -d $HOME/.oh-my-zsh || which omz) && test -d ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-history-substring-search",
 			},
 			actions.PlatformMacOS: {
 				Command:       " git clone https://github.com/zsh-users/zsh-history-substring-search ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-history-substring-search",

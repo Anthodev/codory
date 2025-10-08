@@ -7,25 +7,25 @@ import (
 	"anthodev/codory/internal/actions"
 )
 
-// TestInstallZshPluginHistorySearch tests the creation of the Install Zsh Plugin History Search action
+// TestInstallZshPluginSyntaxHighlighting tests the creation of the Install Zsh Plugin Syntax Highlighting action
 // This test verifies the action configuration without executing any actual commands
-func TestInstallZshPluginHistorySearch(t *testing.T) {
-	action := InstallZshPluginHistorySearch()
+func TestInstallZshPluginSyntaxHighlighting(t *testing.T) {
+	action := InstallZshPluginSyntaxHighlighting()
 
 	if action == nil {
-		t.Fatal("InstallZshPluginHistorySearch() returned nil")
+		t.Fatal("InstallZshPluginSyntaxHighlighting() returned nil")
 	}
 
-	if action.ID != "install_zsh_plugin_history_search" {
-		t.Errorf("Expected action ID to be 'install_zsh_plugin_history_search', got '%s'", action.ID)
+	if action.ID != "install_zsh_plugin_syntax_highlighting" {
+		t.Errorf("Expected action ID to be 'install_zsh_plugin_syntax_highlighting', got '%s'", action.ID)
 	}
 
-	if action.Name != "Install Zsh Plugin zsh-history-substring-search" {
-		t.Errorf("Expected action name to be 'Install Zsh Plugin zsh-history-substring-search', got '%s'", action.Name)
+	if action.Name != "Install Zsh Plugin zsh-syntax-highlighting" {
+		t.Errorf("Expected action name to be 'Install Zsh Plugin zsh-syntax-highlighting', got '%s'", action.Name)
 	}
 
-	if action.Description != "Installs the zsh-history-substring-search plugin" {
-		t.Errorf("Expected action description to be 'Installs the zsh-history-substring-search plugin', got '%s'", action.Description)
+	if action.Description != "Installs the zsh-syntax-highlighting plugin" {
+		t.Errorf("Expected action description to be 'Installs the zsh-syntax-highlighting plugin', got '%s'", action.Description)
 	}
 
 	if action.Type != actions.ActionTypeCommand {
@@ -37,10 +37,10 @@ func TestInstallZshPluginHistorySearch(t *testing.T) {
 	}
 }
 
-// TestInstallZshPluginHistorySearch_PlatformCommands tests that platform commands are correctly configured
+// TestInstallZshPluginSyntaxHighlighting_PlatformCommands tests that platform commands are correctly configured
 // This test only verifies the command strings without executing them
-func TestInstallZshPluginHistorySearch_PlatformCommands(t *testing.T) {
-	action := InstallZshPluginHistorySearch()
+func TestInstallZshPluginSyntaxHighlighting_PlatformCommands(t *testing.T) {
+	action := InstallZshPluginSyntaxHighlighting()
 
 	tests := []struct {
 		name            string
@@ -52,16 +52,16 @@ func TestInstallZshPluginHistorySearch_PlatformCommands(t *testing.T) {
 		{
 			name:            "Linux platform",
 			platform:        actions.PlatformLinux,
-			expectedCommand: " git clone https://github.com/zsh-users/zsh-history-substring-search ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-history-substring-search",
+			expectedCommand: " git clone https://github.com/zsh-users/zsh-syntax-highlighting ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting",
 			expectedSource:  actions.PackageSourceAny,
-			expectedCheck:   "which git && (test -d $HOME/.oh-my-zsh || which omz) && test -d ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-history-substring-search",
+			expectedCheck:   "which git && (test -d $HOME/.oh-my-zsh || which omz) && test -d ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting",
 		},
 		{
 			name:            "macOS platform",
 			platform:        actions.PlatformMacOS,
-			expectedCommand: " git clone https://github.com/zsh-users/zsh-history-substring-search ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-history-substring-search",
+			expectedCommand: " git clone https://github.com/zsh-users/zsh-syntax-highlighting ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting",
 			expectedSource:  actions.PackageSourceAny,
-			expectedCheck:   "which git && (test -d $HOME/.oh-my-zsh || which omz) && test -d ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-history-substring-search",
+			expectedCheck:   "which git && (test -d $HOME/.oh-my-zsh || which omz) && test -d ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting",
 		},
 	}
 
@@ -87,10 +87,10 @@ func TestInstallZshPluginHistorySearch_PlatformCommands(t *testing.T) {
 	}
 }
 
-// TestInstallZshPluginHistorySearch_UnsupportedPlatforms verifies that unsupported platforms don't have commands
+// TestInstallZshPluginSyntaxHighlighting_UnsupportedPlatforms verifies that unsupported platforms don't have commands
 // This prevents accidental execution on unsupported systems
-func TestInstallZshPluginHistorySearch_UnsupportedPlatforms(t *testing.T) {
-	action := InstallZshPluginHistorySearch()
+func TestInstallZshPluginSyntaxHighlighting_UnsupportedPlatforms(t *testing.T) {
+	action := InstallZshPluginSyntaxHighlighting()
 
 	// Test that unsupported platforms don't have commands
 	unsupportedPlatforms := []actions.Platform{
@@ -109,10 +109,10 @@ func TestInstallZshPluginHistorySearch_UnsupportedPlatforms(t *testing.T) {
 	}
 }
 
-// TestInstallZshPluginHistorySearch_ActionConsistency verifies that all platform commands have consistent structure
+// TestInstallZshPluginSyntaxHighlighting_ActionConsistency verifies that all platform commands have consistent structure
 // This ensures the action is properly configured for safe execution
-func TestInstallZshPluginHistorySearch_ActionConsistency(t *testing.T) {
-	action := InstallZshPluginHistorySearch()
+func TestInstallZshPluginSyntaxHighlighting_ActionConsistency(t *testing.T) {
+	action := InstallZshPluginSyntaxHighlighting()
 
 	// Verify that all platform commands have consistent structure
 	for platform, cmd := range action.PlatformCommands {
@@ -130,12 +130,12 @@ func TestInstallZshPluginHistorySearch_ActionConsistency(t *testing.T) {
 	}
 }
 
-// TestInstallZshPluginHistorySearch_MultipleCalls tests that multiple calls return equivalent actions
+// TestInstallZshPluginSyntaxHighlighting_MultipleCalls tests that multiple calls return equivalent actions
 // This ensures the factory function is deterministic and safe
-func TestInstallZshPluginHistorySearch_MultipleCalls(t *testing.T) {
-	// Test that multiple calls to InstallZshPluginHistorySearch return equivalent actions
-	action1 := InstallZshPluginHistorySearch()
-	action2 := InstallZshPluginHistorySearch()
+func TestInstallZshPluginSyntaxHighlighting_MultipleCalls(t *testing.T) {
+	// Test that multiple calls to InstallZshPluginSyntaxHighlighting return equivalent actions
+	action1 := InstallZshPluginSyntaxHighlighting()
+	action2 := InstallZshPluginSyntaxHighlighting()
 
 	if action1.ID != action2.ID {
 		t.Errorf("Expected action IDs to be consistent, got '%s' and '%s'", action1.ID, action2.ID)
@@ -179,10 +179,10 @@ func TestInstallZshPluginHistorySearch_MultipleCalls(t *testing.T) {
 	}
 }
 
-// TestInstallZshPluginHistorySearch_ExpectedPlatforms verifies that only expected platforms are configured
+// TestInstallZshPluginSyntaxHighlighting_ExpectedPlatforms verifies that only expected platforms are configured
 // This prevents accidental execution on unexpected platforms
-func TestInstallZshPluginHistorySearch_ExpectedPlatforms(t *testing.T) {
-	action := InstallZshPluginHistorySearch()
+func TestInstallZshPluginSyntaxHighlighting_ExpectedPlatforms(t *testing.T) {
+	action := InstallZshPluginSyntaxHighlighting()
 
 	expectedPlatforms := []actions.Platform{
 		actions.PlatformLinux,
@@ -204,13 +204,13 @@ func TestInstallZshPluginHistorySearch_ExpectedPlatforms(t *testing.T) {
 	}
 }
 
-// TestInstallZshPluginHistorySearch_CommandStructure tests that the command uses the correct git clone command
+// TestInstallZshPluginSyntaxHighlighting_CommandStructure tests that the command uses the correct git clone command
 // This verifies the command structure without executing it
-func TestInstallZshPluginHistorySearch_CommandStructure(t *testing.T) {
-	action := InstallZshPluginHistorySearch()
+func TestInstallZshPluginSyntaxHighlighting_CommandStructure(t *testing.T) {
+	action := InstallZshPluginSyntaxHighlighting()
 
 	// Test that the command uses the correct git clone command
-	expectedCommand := " git clone https://github.com/zsh-users/zsh-history-substring-search ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-history-substring-search"
+	expectedCommand := " git clone https://github.com/zsh-users/zsh-syntax-highlighting ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting"
 
 	for platform, cmd := range action.PlatformCommands {
 		if cmd.Command != expectedCommand {
@@ -218,7 +218,7 @@ func TestInstallZshPluginHistorySearch_CommandStructure(t *testing.T) {
 		}
 
 		// Verify the command contains the expected URL
-		if !contains(cmd.Command, "https://github.com/zsh-users/zsh-history-substring-search") {
+		if !contains(cmd.Command, "https://github.com/zsh-users/zsh-syntax-highlighting") {
 			t.Errorf("Platform %s command does not contain the expected plugin URL", platform)
 		}
 
@@ -228,20 +228,20 @@ func TestInstallZshPluginHistorySearch_CommandStructure(t *testing.T) {
 		}
 
 		// Verify the command uses the correct plugin directory
-		if !contains(cmd.Command, "${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-history-substring-search") {
+		if !contains(cmd.Command, "${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting") {
 			t.Errorf("Platform %s command does not use the correct plugin directory", platform)
 		}
 	}
 }
 
-// TestInstallZshPluginHistorySearch_CheckCommandStructure tests that the check command properly checks for dependencies
+// TestInstallZshPluginSyntaxHighlighting_CheckCommandStructure tests that the check command properly checks for dependencies
 // This ensures the action won't execute if prerequisites are not met
-func TestInstallZshPluginHistorySearch_CheckCommandStructure(t *testing.T) {
-	action := InstallZshPluginHistorySearch()
+func TestInstallZshPluginSyntaxHighlighting_CheckCommandStructure(t *testing.T) {
+	action := InstallZshPluginSyntaxHighlighting()
 
 	// Test that the check command properly checks for git dependency and Oh My Zsh installation
-	expectedCheckLinux := "which git && (test -d $HOME/.oh-my-zsh || which omz) && test -d ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-history-substring-search"
-	expectedCheckMacOS := "which git && (test -d $HOME/.oh-my-zsh || which omz) && test -d ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-history-substring-search"
+	expectedCheckLinux := "which git && (test -d $HOME/.oh-my-zsh || which omz) && test -d ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting"
+	expectedCheckMacOS := "which git && (test -d $HOME/.oh-my-zsh || which omz) && test -d ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting"
 
 	for platform, cmd := range action.PlatformCommands {
 		if platform == actions.PlatformLinux {
@@ -271,10 +271,10 @@ func TestInstallZshPluginHistorySearch_CheckCommandStructure(t *testing.T) {
 	}
 }
 
-// TestInstallZshPluginHistorySearch_NoCommandExecution ensures that the test never executes actual commands
+// TestInstallZshPluginSyntaxHighlighting_NoCommandExecution ensures that the test never executes actual commands
 // This is a safety test to verify that we're only testing configuration, not execution
-func TestInstallZshPluginHistorySearch_NoCommandExecution(t *testing.T) {
-	action := InstallZshPluginHistorySearch()
+func TestInstallZshPluginSyntaxHighlighting_NoCommandExecution(t *testing.T) {
+	action := InstallZshPluginSyntaxHighlighting()
 
 	// Verify that the action is configured as a command type (not function)
 	if action.Type != actions.ActionTypeCommand {
@@ -292,10 +292,10 @@ func TestInstallZshPluginHistorySearch_NoCommandExecution(t *testing.T) {
 	}
 }
 
-// TestInstallZshPluginHistorySearch_SafeForCI verifies that the action is safe to use in CI environments
+// TestInstallZshPluginSyntaxHighlighting_SafeForCI verifies that the action is safe to use in CI environments
 // This test ensures no actual system commands will be executed during testing
-func TestInstallZshPluginHistorySearch_SafeForCI(t *testing.T) {
-	action := InstallZshPluginHistorySearch()
+func TestInstallZshPluginSyntaxHighlighting_SafeForCI(t *testing.T) {
+	action := InstallZshPluginSyntaxHighlighting()
 
 	// Verify the action has proper check commands to prevent unnecessary execution
 	for platform, cmd := range action.PlatformCommands {
@@ -310,21 +310,21 @@ func TestInstallZshPluginHistorySearch_SafeForCI(t *testing.T) {
 	}
 }
 
-// TestInstallZshPluginHistorySearch_MockExecutorBehavior tests that the action can be safely used with a mock executor
+// TestInstallZshPluginSyntaxHighlighting_MockExecutorBehavior tests that the action can be safely used with a mock executor
 // This demonstrates how to properly mock the action execution without running actual commands
-func TestInstallZshPluginHistorySearch_MockExecutorBehavior(t *testing.T) {
-	action := InstallZshPluginHistorySearch()
+func TestInstallZshPluginSyntaxHighlighting_MockExecutorBehavior(t *testing.T) {
+	action := InstallZshPluginSyntaxHighlighting()
 
 	// Create a mock executor that doesn't execute real commands
 	mockExecutor := &MockExecutor{
 		ExecuteFunc: func(action *actions.Action) (string, error) {
 			// Verify the action structure without executing
-			if action.ID != "install_zsh_plugin_history_search" {
+			if action.ID != "install_zsh_plugin_syntax_highlighting" {
 				return "", fmt.Errorf("unexpected action ID: %s", action.ID)
 			}
 
 			// Return a mock success result
-			return "Zsh history substring search plugin installation mocked successfully", nil
+			return "Zsh syntax highlighting plugin installation mocked successfully", nil
 		},
 	}
 
@@ -334,34 +334,8 @@ func TestInstallZshPluginHistorySearch_MockExecutorBehavior(t *testing.T) {
 		t.Errorf("Mock execution failed: %v", err)
 	}
 
-	expectedResult := "Zsh history substring search plugin installation mocked successfully"
+	expectedResult := "Zsh syntax highlighting plugin installation mocked successfully"
 	if result != expectedResult {
 		t.Errorf("Expected mock result '%s', got '%s'", expectedResult, result)
 	}
-}
-
-// MockExecutor is a test double that simulates action execution without running actual commands
-type MockExecutor struct {
-	ExecuteFunc func(*actions.Action) (string, error)
-}
-
-func (m *MockExecutor) Execute(action *actions.Action) (string, error) {
-	if m.ExecuteFunc != nil {
-		return m.ExecuteFunc(action)
-	}
-	return "", fmt.Errorf("no execute function defined")
-}
-
-// Helper function to check if a string contains a substring
-func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(s) > len(substr) && (s[:len(substr)] == substr || s[len(s)-len(substr):] == substr || containsSubstring(s, substr)))
-}
-
-func containsSubstring(s, substr string) bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
 }

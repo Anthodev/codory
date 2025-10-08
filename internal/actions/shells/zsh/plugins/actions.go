@@ -19,4 +19,5 @@ func init() {
 
 	// Register actions
 	registry.RegisterAction("zsh_plugins", InstallZshPluginHistorySearch())
+	registry.RegisterAction("zsh_plugins", InstallZshPluginSyntaxHighlighting())
 }
