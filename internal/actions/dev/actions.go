@@ -15,6 +15,7 @@ func init() {
 	registry.RegisterCategory("root", devCategory)
 
 	// Register actions
+	registry.RegisterAction("dev", NewInstallDockerAction())
 	registry.RegisterAction("dev", NewUUIDv4Action())
 	registry.RegisterAction("dev", NewUUIDv7Action())
 	registry.RegisterAction("dev", DecodeUUIDv7Action())
