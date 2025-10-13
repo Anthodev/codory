@@ -33,18 +33,21 @@ func TestInit(t *testing.T) {
 	}
 
 	// Check if the expected actions are registered
-	if len(dockerCategory.Actions) != 2 {
-		t.Fatalf("Expected 2 actions in docker category, got %d", len(dockerCategory.Actions))
+	if len(dockerCategory.Actions) != 3 {
+		t.Fatalf("Expected 3 actions in docker category, got %d", len(dockerCategory.Actions))
 	}
 
 	// Verify all actions are present
 	var installDockerAction *actions.Action
 	var installDockerComposeAction *actions.Action
+	var addUserToDockerGroupAction *actions.Action
 	for _, action := range dockerCategory.Actions {
 		if action.ID == "install_docker" {
 			installDockerAction = action
 		} else if action.ID == "install_docker_compose" {
 			installDockerComposeAction = action
+		} else if action.ID == "docker_add_user_to_group" {
+			addUserToDockerGroupAction = action
 		}
 	}
 
@@ -56,12 +59,20 @@ func TestInit(t *testing.T) {
 		t.Error("install_docker_compose action not found in docker category")
 	}
 
+	if addUserToDockerGroupAction == nil {
+		t.Error("docker_add_user_to_group action not found in docker category")
+	}
+
 	if installDockerAction.Name != "Install Docker engine" {
 		t.Errorf("Expected install_docker action name to be 'Install Docker engine', got '%s'", installDockerAction.Name)
 	}
 
 	if installDockerComposeAction.Name != "Install Docker Compose" {
 		t.Errorf("Expected install_docker_compose action name to be 'Install Docker Compose', got '%s'", installDockerComposeAction.Name)
+	}
+
+	if addUserToDockerGroupAction.Name != "Add Current User to Docker Group" {
+		t.Errorf("Expected docker_add_user_to_group action name to be 'Add Current User to Docker Group', got '%s'", addUserToDockerGroupAction.Name)
 	}
 }
 
@@ -220,6 +231,10 @@ func TestDockerCategoryActionsHaveCorrectTypes(t *testing.T) {
 			if action.Type != actions.ActionTypeCommand {
 				t.Errorf("Action %s should be of type Command, got %s", action.ID, action.Type)
 			}
+		case "docker_add_user_to_group":
+			if action.Type != actions.ActionTypeCommand {
+				t.Errorf("Action %s should be of type Command, got %s", action.ID, action.Type)
+			}
 		default:
 			t.Errorf("Unknown action %s with type %s", action.ID, action.Type)
 		}
@@ -249,18 +264,21 @@ func TestDockerCategoryRegistrationVerification(t *testing.T) {
 	}
 
 	// Verify docker category has the expected actions
-	if len(dockerCategory.Actions) != 2 {
-		t.Fatalf("Expected 2 actions in docker category, got %d", len(dockerCategory.Actions))
+	if len(dockerCategory.Actions) != 3 {
+		t.Fatalf("Expected 3 actions in docker category, got %d", len(dockerCategory.Actions))
 	}
 
 	// Verify all actions are present
 	var installDockerAction *actions.Action
 	var installDockerComposeAction *actions.Action
+	var addUserToDockerGroupAction *actions.Action
 	for _, action := range dockerCategory.Actions {
 		if action.ID == "install_docker" {
 			installDockerAction = action
 		} else if action.ID == "install_docker_compose" {
 			installDockerComposeAction = action
+		} else if action.ID == "docker_add_user_to_group" {
+			addUserToDockerGroupAction = action
 		}
 	}
 
@@ -270,6 +288,10 @@ func TestDockerCategoryRegistrationVerification(t *testing.T) {
 
 	if installDockerComposeAction == nil {
 		t.Error("install_docker_compose action not found in docker category")
+	}
+
+	if addUserToDockerGroupAction == nil {
+		t.Error("docker_add_user_to_group action not found in docker category")
 	}
 
 	// Verify docker category is visible on all platforms
