@@ -33,5 +33,6 @@ func init() {
 
 	// Register actions
 	registry.RegisterAction("docker", NewInstallDockerAction())
+	registry.RegisterAction("docker", AddCurrentUserToDockerGroupAction())
 	registry.RegisterAction("docker", NewInstallDockerComposeAction())
 }
