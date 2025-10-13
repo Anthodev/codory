@@ -2,7 +2,7 @@ package dev
 
 import "anthodev/codory/internal/actions"
 
-func NewInstallDockerComposeAction() *actions.Action {
+func InstallDockerComposeAction() *actions.Action {
 	return &actions.Action{
 		ID:          "install_docker_compose",
 		Name:        "Install Docker Compose",

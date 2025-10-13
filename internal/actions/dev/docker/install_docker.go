@@ -2,7 +2,7 @@ package dev
 
 import "anthodev/codory/internal/actions"
 
-func NewInstallDockerAction() *actions.Action {
+func InstallDockerAction() *actions.Action {
 	return &actions.Action{
 		ID:          "install_docker",
 		Name:        "Install Docker engine",

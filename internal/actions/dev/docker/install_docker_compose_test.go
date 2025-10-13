@@ -12,7 +12,7 @@ import (
 // TestNewInstallDockerComposeAction tests the creation of the Install Docker Compose action
 // This test verifies the action configuration without executing any actual commands
 func TestNewInstallDockerComposeAction(t *testing.T) {
-	action := NewInstallDockerComposeAction()
+	action := InstallDockerComposeAction()
 
 	if action == nil {
 		t.Fatal("NewInstallDockerComposeAction() returned nil")
@@ -42,7 +42,7 @@ func TestNewInstallDockerComposeAction(t *testing.T) {
 // TestNewInstallDockerComposeAction_PlatformCommands tests that platform commands are correctly configured
 // This test only verifies the command strings without executing them
 func TestNewInstallDockerComposeAction_PlatformCommands(t *testing.T) {
-	action := NewInstallDockerComposeAction()
+	action := InstallDockerComposeAction()
 
 	tests := []struct {
 		name            string
@@ -106,7 +106,7 @@ func TestNewInstallDockerComposeAction_PlatformCommands(t *testing.T) {
 // TestNewInstallDockerComposeAction_UnsupportedPlatforms verifies that unsupported platforms don't have commands
 // This prevents accidental execution on unsupported systems
 func TestNewInstallDockerComposeAction_UnsupportedPlatforms(t *testing.T) {
-	action := NewInstallDockerComposeAction()
+	action := InstallDockerComposeAction()
 
 	// Test that unsupported platforms don't have commands
 	unsupportedPlatforms := []actions.Platform{
@@ -129,7 +129,7 @@ func TestNewInstallDockerComposeAction_UnsupportedPlatforms(t *testing.T) {
 // TestNewInstallDockerComposeAction_ActionConsistency verifies that all platform commands have consistent structure
 // This ensures the action is properly configured for safe execution
 func TestNewInstallDockerComposeAction_ActionConsistency(t *testing.T) {
-	action := NewInstallDockerComposeAction()
+	action := InstallDockerComposeAction()
 
 	// Verify that all platform commands have consistent structure
 	for platform, cmd := range action.PlatformCommands {
@@ -157,8 +157,8 @@ func TestNewInstallDockerComposeAction_ActionConsistency(t *testing.T) {
 // This ensures the factory function is deterministic and safe
 func TestNewInstallDockerComposeAction_MultipleCalls(t *testing.T) {
 	// Test that multiple calls to NewInstallDockerComposeAction return equivalent actions
-	action1 := NewInstallDockerComposeAction()
-	action2 := NewInstallDockerComposeAction()
+	action1 := InstallDockerComposeAction()
+	action2 := InstallDockerComposeAction()
 
 	if action1.ID != action2.ID {
 		t.Errorf("Expected action IDs to be consistent, got '%s' and '%s'", action1.ID, action2.ID)
@@ -205,7 +205,7 @@ func TestNewInstallDockerComposeAction_MultipleCalls(t *testing.T) {
 // TestNewInstallDockerComposeAction_ExpectedPlatforms verifies that only expected platforms are configured
 // This prevents accidental execution on unexpected platforms
 func TestNewInstallDockerComposeAction_ExpectedPlatforms(t *testing.T) {
-	action := NewInstallDockerComposeAction()
+	action := InstallDockerComposeAction()
 
 	expectedPlatforms := []actions.Platform{
 		actions.PlatformArch,
@@ -231,7 +231,7 @@ func TestNewInstallDockerComposeAction_ExpectedPlatforms(t *testing.T) {
 
 // TestNewInstallDockerComposeAction_ArchCommandStructure tests that the Arch command uses pacman
 func TestNewInstallDockerComposeAction_ArchCommandStructure(t *testing.T) {
-	action := NewInstallDockerComposeAction()
+	action := InstallDockerComposeAction()
 
 	cmd, exists := action.PlatformCommands[actions.PlatformArch]
 	if !exists {
@@ -261,7 +261,7 @@ func TestNewInstallDockerComposeAction_ArchCommandStructure(t *testing.T) {
 
 // TestNewInstallDockerComposeAction_DebianCommandStructure tests that the Debian command uses apt
 func TestNewInstallDockerComposeAction_DebianCommandStructure(t *testing.T) {
-	action := NewInstallDockerComposeAction()
+	action := InstallDockerComposeAction()
 
 	cmd, exists := action.PlatformCommands[actions.PlatformDebian]
 	if !exists {
@@ -291,7 +291,7 @@ func TestNewInstallDockerComposeAction_DebianCommandStructure(t *testing.T) {
 
 // TestNewInstallDockerComposeAction_LinuxCommandStructure tests that the Linux command uses brew
 func TestNewInstallDockerComposeAction_LinuxCommandStructure(t *testing.T) {
-	action := NewInstallDockerComposeAction()
+	action := InstallDockerComposeAction()
 
 	cmd, exists := action.PlatformCommands[actions.PlatformLinux]
 	if !exists {
@@ -316,7 +316,7 @@ func TestNewInstallDockerComposeAction_LinuxCommandStructure(t *testing.T) {
 
 // TestNewInstallDockerComposeAction_MacOSCommandStructure tests that the macOS command uses brew
 func TestNewInstallDockerComposeAction_MacOSCommandStructure(t *testing.T) {
-	action := NewInstallDockerComposeAction()
+	action := InstallDockerComposeAction()
 
 	cmd, exists := action.PlatformCommands[actions.PlatformMacOS]
 	if !exists {
@@ -341,7 +341,7 @@ func TestNewInstallDockerComposeAction_MacOSCommandStructure(t *testing.T) {
 
 // TestNewInstallDockerComposeAction_CheckCommandStructure tests that the check command properly checks for docker compose
 func TestNewInstallDockerComposeAction_CheckCommandStructure(t *testing.T) {
-	action := NewInstallDockerComposeAction()
+	action := InstallDockerComposeAction()
 
 	// Test that the check command properly checks for docker compose
 	expectedCheck := "docker compose version"
@@ -365,7 +365,7 @@ func TestNewInstallDockerComposeAction_CheckCommandStructure(t *testing.T) {
 
 // TestNewInstallDockerComposeAction_PackageSourceConsistency tests that package sources are correctly assigned
 func TestNewInstallDockerComposeAction_PackageSourceConsistency(t *testing.T) {
-	action := NewInstallDockerComposeAction()
+	action := InstallDockerComposeAction()
 
 	// Test official package sources for Arch and Debian
 	officialPlatforms := []actions.Platform{
@@ -409,7 +409,7 @@ func TestNewInstallDockerComposeAction_PackageSourceConsistency(t *testing.T) {
 // TestNewInstallDockerComposeAction_NoCommandExecution ensures that the test never executes actual commands
 // This is a safety test to verify that we're only testing configuration, not execution
 func TestNewInstallDockerComposeAction_NoCommandExecution(t *testing.T) {
-	action := NewInstallDockerComposeAction()
+	action := InstallDockerComposeAction()
 
 	// Verify that the action is configured as a command type (not function)
 	if action.Type != actions.ActionTypeCommand {
@@ -430,7 +430,7 @@ func TestNewInstallDockerComposeAction_NoCommandExecution(t *testing.T) {
 // TestNewInstallDockerComposeAction_SafeForCI verifies that the action is safe to use in CI environments
 // This test ensures no actual system commands will be executed during testing
 func TestNewInstallDockerComposeAction_SafeForCI(t *testing.T) {
-	action := NewInstallDockerComposeAction()
+	action := InstallDockerComposeAction()
 
 	// Verify the action has proper check commands to prevent unnecessary execution
 	for platform, cmd := range action.PlatformCommands {
@@ -448,7 +448,7 @@ func TestNewInstallDockerComposeAction_SafeForCI(t *testing.T) {
 // TestNewInstallDockerComposeAction_MockExecutorBehavior tests that the action can be safely used with a mock executor
 // This demonstrates how to properly mock the action execution without running actual commands
 func TestNewInstallDockerComposeAction_MockExecutorBehavior(t *testing.T) {
-	action := NewInstallDockerComposeAction()
+	action := InstallDockerComposeAction()
 
 	// Create a mock executor that doesn't execute real commands
 	mockExecutor := testutil.NewMockExecutor(func(action *actions.Action) (string, error) {

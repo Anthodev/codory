@@ -9,25 +9,25 @@ import (
 	"anthodev/codory/test/testutil"
 )
 
-// TestNewInstallDockerAction tests the creation of the Install Docker action
+// TestInstallLazydocker tests the creation of the Install Lazydocker action
 // This test verifies the action configuration without executing any actual commands
-func TestNewInstallDockerAction(t *testing.T) {
-	action := InstallDockerAction()
+func TestInstallLazydocker(t *testing.T) {
+	action := InstallLazydocker()
 
 	if action == nil {
-		t.Fatal("NewInstallDockerAction() returned nil")
+		t.Fatal("InstallLazydocker() returned nil")
 	}
 
-	if action.ID != "install_docker" {
-		t.Errorf("Expected action ID to be 'install_docker', got '%s'", action.ID)
+	if action.ID != "install_lazydocker" {
+		t.Errorf("Expected action ID to be 'install_lazydocker', got '%s'", action.ID)
 	}
 
-	if action.Name != "Install Docker engine" {
-		t.Errorf("Expected action name to be 'Install Docker engine', got '%s'", action.Name)
+	if action.Name != "Install lazydocker" {
+		t.Errorf("Expected action name to be 'Install lazydocker', got '%s'", action.Name)
 	}
 
-	if action.Description != "Install Docker engine" {
-		t.Errorf("Expected action description to be 'Install Docker engine', got '%s'", action.Description)
+	if action.Description != "Install lazydocker on your system" {
+		t.Errorf("Expected action description to be 'Install lazydocker on your system', got '%s'", action.Description)
 	}
 
 	if action.Type != actions.ActionTypeCommand {
@@ -39,10 +39,10 @@ func TestNewInstallDockerAction(t *testing.T) {
 	}
 }
 
-// TestNewInstallDockerAction_PlatformCommands tests that platform commands are correctly configured
+// TestInstallLazydocker_PlatformCommands tests that platform commands are correctly configured
 // This test only verifies the command strings without executing them
-func TestNewInstallDockerAction_PlatformCommands(t *testing.T) {
-	action := InstallDockerAction()
+func TestInstallLazydocker_PlatformCommands(t *testing.T) {
+	action := InstallLazydocker()
 
 	tests := []struct {
 		name            string
@@ -52,39 +52,25 @@ func TestNewInstallDockerAction_PlatformCommands(t *testing.T) {
 		expectedCheck   string
 	}{
 		{
-			name:            "Arch platform",
-			platform:        actions.PlatformArch,
-			expectedCommand: "sudo pacman -S docker",
-			expectedSource:  actions.PackageSourceOfficial,
-			expectedCheck:   "docker",
-		},
-		{
-			name:            "Debian platform",
-			platform:        actions.PlatformDebian,
-			expectedCommand: "sudo apt get install docker",
-			expectedSource:  actions.PackageSourceOfficial,
-			expectedCheck:   "docker",
-		},
-		{
 			name:            "Linux platform",
 			platform:        actions.PlatformLinux,
-			expectedCommand: "curl -fsSL https://get.docker.com -o get-docker.sh && sh get-docker.sh",
-			expectedSource:  actions.PackageSourceAny,
-			expectedCheck:   "docker",
+			expectedCommand: "brew install lazydocker",
+			expectedSource:  actions.PackageSourceBrew,
+			expectedCheck:   "lazydocker",
 		},
 		{
 			name:            "macOS platform",
 			platform:        actions.PlatformMacOS,
-			expectedCommand: "brew install docker",
-			expectedSource:  actions.PackageSourceAny,
-			expectedCheck:   "docker",
+			expectedCommand: "brew install lazydocker",
+			expectedSource:  actions.PackageSourceBrew,
+			expectedCheck:   "lazydocker",
 		},
 		{
 			name:            "Windows platform",
 			platform:        actions.PlatformWindows,
-			expectedCommand: "winget install Docker.DockerDesktop",
+			expectedCommand: "winget install JesseDuffield.Lazydocker",
 			expectedSource:  actions.PackageSourceWinget,
-			expectedCheck:   "docker",
+			expectedCheck:   "lazydocker",
 		},
 	}
 
@@ -110,10 +96,10 @@ func TestNewInstallDockerAction_PlatformCommands(t *testing.T) {
 	}
 }
 
-// TestNewInstallDockerAction_UnsupportedPlatforms verifies that unsupported platforms don't have commands
+// TestInstallLazydocker_UnsupportedPlatforms verifies that unsupported platforms don't have commands
 // This prevents accidental execution on unsupported systems
-func TestNewInstallDockerAction_UnsupportedPlatforms(t *testing.T) {
-	action := InstallDockerAction()
+func TestInstallLazydocker_UnsupportedPlatforms(t *testing.T) {
+	action := InstallLazydocker()
 
 	// Test that unsupported platforms don't have commands
 	unsupportedPlatforms := []actions.Platform{
@@ -121,6 +107,8 @@ func TestNewInstallDockerAction_UnsupportedPlatforms(t *testing.T) {
 		actions.Platform("fedora"),
 		actions.Platform("opensuse"),
 		actions.Platform("alpine"),
+		actions.Platform("arch"),
+		actions.Platform("debian"),
 	}
 
 	for _, platform := range unsupportedPlatforms {
@@ -132,10 +120,10 @@ func TestNewInstallDockerAction_UnsupportedPlatforms(t *testing.T) {
 	}
 }
 
-// TestNewInstallDockerAction_ActionConsistency verifies that all platform commands have consistent structure
+// TestInstallLazydocker_ActionConsistency verifies that all platform commands have consistent structure
 // This ensures the action is properly configured for safe execution
-func TestNewInstallDockerAction_ActionConsistency(t *testing.T) {
-	action := InstallDockerAction()
+func TestInstallLazydocker_ActionConsistency(t *testing.T) {
+	action := InstallLazydocker()
 
 	// Verify that all platform commands have consistent structure
 	for platform, cmd := range action.PlatformCommands {
@@ -152,19 +140,19 @@ func TestNewInstallDockerAction_ActionConsistency(t *testing.T) {
 		}
 
 		// Verify that check command is consistent across platforms
-		expectedCheck := "docker"
+		expectedCheck := "lazydocker"
 		if cmd.CheckCommand != expectedCheck {
 			t.Errorf("Platform %s has unexpected check command '%s', expected '%s'", platform, cmd.CheckCommand, expectedCheck)
 		}
 	}
 }
 
-// TestNewInstallDockerAction_MultipleCalls tests that multiple calls return equivalent actions
+// TestInstallLazydocker_MultipleCalls tests that multiple calls return equivalent actions
 // This ensures the factory function is deterministic and safe
-func TestNewInstallDockerAction_MultipleCalls(t *testing.T) {
-	// Test that multiple calls to NewInstallDockerAction return equivalent actions
-	action1 := InstallDockerAction()
-	action2 := InstallDockerAction()
+func TestInstallLazydocker_MultipleCalls(t *testing.T) {
+	// Test that multiple calls to InstallLazydocker return equivalent actions
+	action1 := InstallLazydocker()
+	action2 := InstallLazydocker()
 
 	if action1.ID != action2.ID {
 		t.Errorf("Expected action IDs to be consistent, got '%s' and '%s'", action1.ID, action2.ID)
@@ -208,14 +196,12 @@ func TestNewInstallDockerAction_MultipleCalls(t *testing.T) {
 	}
 }
 
-// TestNewInstallDockerAction_ExpectedPlatforms verifies that only expected platforms are configured
+// TestInstallLazydocker_ExpectedPlatforms verifies that only expected platforms are configured
 // This prevents accidental execution on unexpected platforms
-func TestNewInstallDockerAction_ExpectedPlatforms(t *testing.T) {
-	action := InstallDockerAction()
+func TestInstallLazydocker_ExpectedPlatforms(t *testing.T) {
+	action := InstallLazydocker()
 
 	expectedPlatforms := []actions.Platform{
-		actions.PlatformArch,
-		actions.PlatformDebian,
 		actions.PlatformLinux,
 		actions.PlatformMacOS,
 		actions.PlatformWindows,
@@ -236,96 +222,41 @@ func TestNewInstallDockerAction_ExpectedPlatforms(t *testing.T) {
 	}
 }
 
-// TestNewInstallDockerAction_ArchCommandStructure tests that the Arch command uses pacman
-func TestNewInstallDockerAction_ArchCommandStructure(t *testing.T) {
-	action := InstallDockerAction()
-
-	cmd, exists := action.PlatformCommands[actions.PlatformArch]
-	if !exists {
-		t.Fatal("Expected Arch platform command to exist")
-	}
-
-	expectedCommand := "sudo pacman -S docker"
-	if cmd.Command != expectedCommand {
-		t.Errorf("Expected Arch command to be '%s', got '%s'", expectedCommand, cmd.Command)
-	}
-
-	// Verify the command uses pacman
-	if !utils.Contains(cmd.Command, "pacman") {
-		t.Error("Arch command should use pacman package manager")
-	}
-
-	// Verify the command installs docker
-	if !utils.Contains(cmd.Command, "docker") {
-		t.Error("Arch command should install docker package")
-	}
-}
-
-// TestNewInstallDockerAction_DebianCommandStructure tests that the Debian command uses apt
-func TestNewInstallDockerAction_DebianCommandStructure(t *testing.T) {
-	action := InstallDockerAction()
-
-	cmd, exists := action.PlatformCommands[actions.PlatformDebian]
-	if !exists {
-		t.Fatal("Expected Debian platform command to exist")
-	}
-
-	expectedCommand := "sudo apt get install docker"
-	if cmd.Command != expectedCommand {
-		t.Errorf("Expected Debian command to be '%s', got '%s'", expectedCommand, cmd.Command)
-	}
-
-	// Verify the command uses apt
-	if !utils.Contains(cmd.Command, "apt") {
-		t.Error("Debian command should use apt package manager")
-	}
-
-	// Verify the command installs docker
-	if !utils.Contains(cmd.Command, "docker") {
-		t.Error("Debian command should install docker package")
-	}
-}
-
-// TestNewInstallDockerAction_LinuxCommandStructure tests that the Linux command uses the official Docker install script
-func TestNewInstallDockerAction_LinuxCommandStructure(t *testing.T) {
-	action := InstallDockerAction()
+// TestInstallLazydocker_LinuxCommandStructure tests that the Linux command uses brew
+func TestInstallLazydocker_LinuxCommandStructure(t *testing.T) {
+	action := InstallLazydocker()
 
 	cmd, exists := action.PlatformCommands[actions.PlatformLinux]
 	if !exists {
 		t.Fatal("Expected Linux platform command to exist")
 	}
 
-	expectedCommand := "curl -fsSL https://get.docker.com -o get-docker.sh && sh get-docker.sh"
+	expectedCommand := "brew install lazydocker"
 	if cmd.Command != expectedCommand {
 		t.Errorf("Expected Linux command to be '%s', got '%s'", expectedCommand, cmd.Command)
 	}
 
-	// Verify the command uses the official Docker install script
-	if !utils.Contains(cmd.Command, "https://get.docker.com") {
-		t.Error("Linux command should use the official Docker install script")
+	// Verify the command uses brew
+	if !utils.Contains(cmd.Command, "brew") {
+		t.Error("Linux command should use Homebrew package manager")
 	}
 
-	// Verify the command uses curl
-	if !utils.Contains(cmd.Command, "curl") {
-		t.Error("Linux command should use curl to download the script")
-	}
-
-	// Verify the command executes the downloaded script
-	if !utils.Contains(cmd.Command, "sh get-docker.sh") {
-		t.Error("Linux command should execute the downloaded Docker install script")
+	// Verify the command installs lazydocker
+	if !utils.Contains(cmd.Command, "lazydocker") {
+		t.Error("Linux command should install lazydocker package")
 	}
 }
 
-// TestNewInstallDockerAction_MacOSCommandStructure tests that the macOS command uses brew
-func TestNewInstallDockerAction_MacOSCommandStructure(t *testing.T) {
-	action := InstallDockerAction()
+// TestInstallLazydocker_MacOSCommandStructure tests that the macOS command uses brew
+func TestInstallLazydocker_MacOSCommandStructure(t *testing.T) {
+	action := InstallLazydocker()
 
 	cmd, exists := action.PlatformCommands[actions.PlatformMacOS]
 	if !exists {
 		t.Fatal("Expected macOS platform command to exist")
 	}
 
-	expectedCommand := "brew install docker"
+	expectedCommand := "brew install lazydocker"
 	if cmd.Command != expectedCommand {
 		t.Errorf("Expected macOS command to be '%s', got '%s'", expectedCommand, cmd.Command)
 	}
@@ -335,22 +266,22 @@ func TestNewInstallDockerAction_MacOSCommandStructure(t *testing.T) {
 		t.Error("macOS command should use Homebrew package manager")
 	}
 
-	// Verify the command installs docker
-	if !utils.Contains(cmd.Command, "docker") {
-		t.Error("macOS command should install docker package")
+	// Verify the command installs lazydocker
+	if !utils.Contains(cmd.Command, "lazydocker") {
+		t.Error("macOS command should install lazydocker package")
 	}
 }
 
-// TestNewInstallDockerAction_WindowsCommandStructure tests that the Windows command uses winget
-func TestNewInstallDockerAction_WindowsCommandStructure(t *testing.T) {
-	action := InstallDockerAction()
+// TestInstallLazydocker_WindowsCommandStructure tests that the Windows command uses winget
+func TestInstallLazydocker_WindowsCommandStructure(t *testing.T) {
+	action := InstallLazydocker()
 
 	cmd, exists := action.PlatformCommands[actions.PlatformWindows]
 	if !exists {
 		t.Fatal("Expected Windows platform command to exist")
 	}
 
-	expectedCommand := "winget install Docker.DockerDesktop"
+	expectedCommand := "winget install JesseDuffield.Lazydocker"
 	if cmd.Command != expectedCommand {
 		t.Errorf("Expected Windows command to be '%s', got '%s'", expectedCommand, cmd.Command)
 	}
@@ -360,35 +291,35 @@ func TestNewInstallDockerAction_WindowsCommandStructure(t *testing.T) {
 		t.Error("Windows command should use winget package manager")
 	}
 
-	// Verify the command installs Docker Desktop
-	if !utils.Contains(cmd.Command, "Docker.DockerDesktop") {
-		t.Error("Windows command should install Docker Desktop")
+	// Verify the command installs JesseDuffield.Lazydocker
+	if !utils.Contains(cmd.Command, "JesseDuffield.Lazydocker") {
+		t.Error("Windows command should install JesseDuffield.Lazydocker")
 	}
 }
 
-// TestNewInstallDockerAction_CheckCommandStructure tests that the check command properly checks for docker
-func TestNewInstallDockerAction_CheckCommandStructure(t *testing.T) {
-	action := InstallDockerAction()
+// TestInstallLazydocker_CheckCommandStructure tests that the check command properly checks for lazydocker
+func TestInstallLazydocker_CheckCommandStructure(t *testing.T) {
+	action := InstallLazydocker()
 
-	// Test that the check command properly checks for docker
-	expectedCheck := "docker"
+	// Test that the check command properly checks for lazydocker
+	expectedCheck := "lazydocker"
 
 	for platform, cmd := range action.PlatformCommands {
 		if cmd.CheckCommand != expectedCheck {
 			t.Errorf("Platform %s has unexpected check command: '%s'", platform, cmd.CheckCommand)
 		}
 
-		// Verify the check command tests for docker
-		if !utils.Contains(cmd.CheckCommand, "docker") {
-			t.Errorf("Platform %s check command should test for docker", platform)
+		// Verify the check command tests for lazydocker
+		if !utils.Contains(cmd.CheckCommand, "lazydocker") {
+			t.Errorf("Platform %s check command should verify lazydocker dependency first", platform)
 		}
 	}
 }
 
-// TestNewInstallDockerAction_NoCommandExecution ensures that the test never executes actual commands
+// TestInstallLazydocker_NoCommandExecution ensures that the test never executes actual commands
 // This is a safety test to verify that we're only testing configuration, not execution
-func TestNewInstallDockerAction_NoCommandExecution(t *testing.T) {
-	action := InstallDockerAction()
+func TestInstallLazydocker_NoCommandExecution(t *testing.T) {
+	action := InstallLazydocker()
 
 	// Verify that the action is configured as a command type (not function)
 	if action.Type != actions.ActionTypeCommand {
@@ -406,10 +337,10 @@ func TestNewInstallDockerAction_NoCommandExecution(t *testing.T) {
 	}
 }
 
-// TestNewInstallDockerAction_SafeForCI verifies that the action is safe to use in CI environments
+// TestInstallLazydocker_SafeForCI verifies that the action is safe to use in CI environments
 // This test ensures no actual system commands will be executed during testing
-func TestNewInstallDockerAction_SafeForCI(t *testing.T) {
-	action := InstallDockerAction()
+func TestInstallLazydocker_SafeForCI(t *testing.T) {
+	action := InstallLazydocker()
 
 	// Verify the action has proper check commands to prevent unnecessary execution
 	for platform, cmd := range action.PlatformCommands {
@@ -418,25 +349,25 @@ func TestNewInstallDockerAction_SafeForCI(t *testing.T) {
 		}
 
 		// Verify check command includes dependency checks
-		if !utils.Contains(cmd.CheckCommand, "docker") {
-			t.Errorf("Platform %s check command should verify docker dependency first", platform)
+		if !utils.Contains(cmd.CheckCommand, "lazydocker") {
+			t.Errorf("Platform %s check command should verify lazydocker dependency first", platform)
 		}
 	}
 }
 
-// TestNewInstallDockerAction_MockExecutorBehavior tests that the action can be safely used with a mock executor
+// TestInstallLazydocker_MockExecutorBehavior tests that the action can be safely used with a mock executor
 // This demonstrates how to properly mock the action execution without running actual commands
-func TestNewInstallDockerAction_MockExecutorBehavior(t *testing.T) {
-	action := InstallDockerAction()
+func TestInstallLazydocker_MockExecutorBehavior(t *testing.T) {
+	action := InstallLazydocker()
 
 	// Create a mock executor that doesn't execute real commands
 	mockExecutor := testutil.NewMockExecutor(func(action *actions.Action) (string, error) {
 		// Verify the action structure without executing
-		if action.ID != "install_docker" {
+		if action.ID != "install_lazydocker" {
 			return "", fmt.Errorf("unexpected action ID: %s", action.ID)
 		}
 
-		return "Docker installation mocked successfully", nil
+		return "Lazydocker installation mocked successfully", nil
 	})
 
 	// Test that we can "execute" the action through the mock
@@ -445,8 +376,66 @@ func TestNewInstallDockerAction_MockExecutorBehavior(t *testing.T) {
 		t.Errorf("Mock execution failed: %v", err)
 	}
 
-	expectedResult := "Docker installation mocked successfully"
+	expectedResult := "Lazydocker installation mocked successfully"
 	if result != expectedResult {
 		t.Errorf("Expected mock result '%s', got '%s'", expectedResult, result)
+	}
+}
+
+// TestInstallLazydocker_BrewConsistency tests that Linux and macOS both use brew consistently
+func TestInstallLazydocker_BrewConsistency(t *testing.T) {
+	action := InstallLazydocker()
+
+	linuxCmd, linuxExists := action.PlatformCommands[actions.PlatformLinux]
+	macOSCmd, macOSExists := action.PlatformCommands[actions.PlatformMacOS]
+
+	if !linuxExists {
+		t.Fatal("Expected Linux platform command to exist")
+	}
+
+	if !macOSExists {
+		t.Fatal("Expected macOS platform command to exist")
+	}
+
+	// Both should use the same brew command
+	if linuxCmd.Command != macOSCmd.Command {
+		t.Errorf("Linux and macOS commands should be identical, got '%s' and '%s'", linuxCmd.Command, macOSCmd.Command)
+	}
+
+	// Both should use brew package source
+	if linuxCmd.PackageSource != actions.PackageSourceBrew {
+		t.Errorf("Linux should use brew package source, got '%s'", linuxCmd.PackageSource)
+	}
+
+	if macOSCmd.PackageSource != actions.PackageSourceBrew {
+		t.Errorf("macOS should use brew package source, got '%s'", macOSCmd.PackageSource)
+	}
+}
+
+// TestInstallLazydocker_PackageSourceValidation tests that package sources are appropriate for each platform
+func TestInstallLazydocker_PackageSourceValidation(t *testing.T) {
+	action := InstallLazydocker()
+
+	// Linux and macOS should use brew
+	for _, platform := range []actions.Platform{actions.PlatformLinux, actions.PlatformMacOS} {
+		cmd, exists := action.PlatformCommands[platform]
+		if !exists {
+			t.Errorf("Expected %s platform command to exist", platform)
+			continue
+		}
+
+		if cmd.PackageSource != actions.PackageSourceBrew {
+			t.Errorf("Expected %s to use brew package source, got '%s'", platform, cmd.PackageSource)
+		}
+	}
+
+	// Windows should use winget
+	windowsCmd, exists := action.PlatformCommands[actions.PlatformWindows]
+	if !exists {
+		t.Fatal("Expected Windows platform command to exist")
+	}
+
+	if windowsCmd.PackageSource != actions.PackageSourceWinget {
+		t.Errorf("Expected Windows to use winget package source, got '%s'", windowsCmd.PackageSource)
 	}
 }
