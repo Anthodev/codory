@@ -33,21 +33,27 @@ func TestInit(t *testing.T) {
 	}
 
 	// Check if the expected actions are registered
-	if len(codeEditorCategory.Actions) != 1 {
-		t.Fatalf("Expected 1 action in code_editor category, got %d", len(codeEditorCategory.Actions))
+	if len(codeEditorCategory.Actions) != 2 {
+		t.Fatalf("Expected 2 actions in code_editor category, got %d", len(codeEditorCategory.Actions))
 	}
 
-	// Verify the action is present
+	// Verify both actions are present
 	var installNeovimAction *actions.Action
+	var installLazyVimAction *actions.Action
 	for _, action := range codeEditorCategory.Actions {
 		if action.ID == "install_neovim" {
 			installNeovimAction = action
-			break
+		} else if action.ID == "install_lazyvim" {
+			installLazyVimAction = action
 		}
 	}
 
 	if installNeovimAction == nil {
 		t.Error("install_neovim action not found in code_editor category")
+	}
+
+	if installLazyVimAction == nil {
+		t.Error("install_lazyvim action not found in code_editor category")
 	}
 
 	if installNeovimAction.Name != "Install Neovim" {
@@ -206,6 +212,10 @@ func TestCodeEditorCategoryActionsHaveCorrectTypes(t *testing.T) {
 			if action.Type != actions.ActionTypeCommand {
 				t.Errorf("Action %s should be of type Command, got %s", action.ID, action.Type)
 			}
+		case "install_lazyvim":
+			if action.Type != actions.ActionTypeCommand {
+				t.Errorf("Action %s should be of type Command, got %s", action.ID, action.Type)
+			}
 		default:
 			t.Errorf("Unknown action %s with type %s", action.ID, action.Type)
 		}
@@ -235,21 +245,27 @@ func TestCodeEditorCategoryRegistrationVerification(t *testing.T) {
 	}
 
 	// Verify code_editor category has the expected actions
-	if len(codeEditorCategory.Actions) != 1 {
-		t.Fatalf("Expected 1 action in code_editor category, got %d", len(codeEditorCategory.Actions))
+	if len(codeEditorCategory.Actions) != 2 {
+		t.Fatalf("Expected 2 actions in code_editor category, got %d", len(codeEditorCategory.Actions))
 	}
 
-	// Verify the action is present
+	// Verify both actions are present
 	var installNeovimAction *actions.Action
+	var installLazyVimAction *actions.Action
 	for _, action := range codeEditorCategory.Actions {
 		if action.ID == "install_neovim" {
 			installNeovimAction = action
-			break
+		} else if action.ID == "install_lazyvim" {
+			installLazyVimAction = action
 		}
 	}
 
 	if installNeovimAction == nil {
 		t.Error("install_neovim action not found in code_editor category")
+	}
+
+	if installLazyVimAction == nil {
+		t.Error("install_lazyvim action not found in code_editor category")
 	}
 
 	// Verify code_editor category is visible on all platforms
