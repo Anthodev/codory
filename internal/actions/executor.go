@@ -66,7 +66,8 @@ func (e *Executor) executeCommand(ctx context.Context, action *Action) (string, 
 
 	// Check if the command exists already
 	if platformCmd.CheckCommand != "" {
-		if commandExists(platformCmd.CheckCommand) {
+		exists := commandExists(platformCmd.CheckCommand)
+		if exists {
 			return "Command or files already exist, skipping installation", nil
 		}
 	}
@@ -156,15 +157,35 @@ func commandExists(cmd string) bool {
 		return true
 	}
 
-	// First try to find it as a binary in PATH
-	if _, err := exec.LookPath(cmd); err == nil {
-		return true
+	// Parse the command to extract the binary name
+	parts := strings.Fields(cmd)
+	if len(parts) == 0 {
+		return false
 	}
 
-	// If that fails, try to execute it as a shell command
-	// This handles cases like "test -d /path" or complex checks
-	ctx := context.Background()
-	command := exec.CommandContext(ctx, "sh", "-c", cmd)
-	err := command.Run()
-	return err == nil
+	// First try to find the main binary in PATH
+	if _, err := exec.LookPath(parts[0]); err != nil {
+		// If the main binary doesn't exist, the command definitely doesn't exist
+		return false
+	}
+
+	// If the command has arguments or is complex, try to execute it as a shell command
+	// This handles cases like "docker compose version", "test -d /path", etc.
+	if len(parts) > 1 || strings.Contains(cmd, "&&") || strings.Contains(cmd, "||") || strings.Contains(cmd, ";") {
+		ctx := context.Background()
+		command := exec.CommandContext(ctx, "sh", "-c", cmd)
+		output, err := command.CombinedOutput()
+
+		// Special handling for Docker in WSL environments
+		if err != nil && strings.Contains(cmd, "docker") && strings.Contains(string(output), "WSL") {
+			// In WSL, if docker command fails with WSL-related message,
+			// we should consider it as "not properly available"
+			return false
+		}
+
+		return err == nil
+	}
+
+	// For simple single commands that passed LookPath, they exist
+	return true
 }
