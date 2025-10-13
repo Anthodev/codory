@@ -16,4 +16,7 @@ func init() {
 	}
 
 	registry.RegisterCategory("root", shellsCategory)
+
+	// Register actions
+	registry.RegisterAction("shells", InstallAtuin())
 }

@@ -49,9 +49,14 @@ func TestInit(t *testing.T) {
 		})
 	}
 
-	// Verify shells category has empty actions and subcategories initially
-	if len(shellsCategory.Actions) != 0 {
-		t.Errorf("Expected shells category to have 0 actions initially, got %d", len(shellsCategory.Actions))
+	// Verify shells category has the InstallAtuin action registered
+	if len(shellsCategory.Actions) != 1 {
+		t.Errorf("Expected shells category to have 1 action (InstallAtuin), got %d", len(shellsCategory.Actions))
+	}
+
+	// Verify the action is InstallAtuin
+	if len(shellsCategory.Actions) > 0 && shellsCategory.Actions[0].ID != "install_atuin" {
+		t.Errorf("Expected first action to be 'install_atuin', got '%s'", shellsCategory.Actions[0].ID)
 	}
 
 	if len(shellsCategory.SubCategories) != 0 {
