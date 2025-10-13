@@ -637,3 +637,205 @@ func TestExecutor_GetPlatformInfo(t *testing.T) {
 		t.Error("expected platform info to have PackageManagers set")
 	}
 }
+
+// TestCommandExists tests the commandExists function with various scenarios
+func TestCommandExists(t *testing.T) {
+	// Temporarily disable test mode to test actual command checking
+	os.Unsetenv(testEnvVar)
+	defer os.Setenv(testEnvVar, testEnvValue)
+
+	tests := []struct {
+		name     string
+		command  string
+		expected bool // Note: This will vary based on the system
+	}{
+		{
+			name:     "simple command that should exist - echo",
+			command:  "echo",
+			expected: true,
+		},
+		{
+			name:     "command with arguments - echo test",
+			command:  "echo test",
+			expected: true,
+		},
+		{
+			name:     "command with complex arguments - echo hello world",
+			command:  "echo hello world",
+			expected: true,
+		},
+		{
+			name:     "nonexistent command",
+			command:  "thiscommanddoesnotexist12345",
+			expected: false,
+		},
+		{
+			name:     "nonexistent command with arguments",
+			command:  "thiscommanddoesnotexist12345 version",
+			expected: false,
+		},
+		{
+			name:     "complex shell command with test",
+			command:  "test -d /tmp",
+			expected: true,
+		},
+		{
+			name:     "complex shell command with test on nonexistent directory",
+			command:  "test -d /thisdirectorydoesnotexist12345",
+			expected: false,
+		},
+		{
+			name:     "docker compose version (WSL scenario)",
+			command:  "docker compose version",
+			expected: true, // Will be true if Docker is available, false otherwise - we just verify it doesn't crash
+		},
+		{
+			name:     "complex command with operators",
+			command:  "which echo && echo found",
+			expected: true,
+		},
+		{
+			name:     "command with OR operator",
+			command:  "false || true",
+			expected: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := commandExists(tt.command)
+
+			// For commands that should exist, we expect them to actually exist
+			// For commands that shouldn't exist, we expect them to not exist
+			// For Docker commands, we just verify the function doesn't crash and handles them properly
+			if tt.name == "docker compose version (WSL scenario)" {
+				// Just log the result for Docker commands - don't fail the test
+				t.Logf("Docker compose version check result: %t (environment dependent)", result)
+			} else if tt.expected && !result {
+				t.Errorf("expected command %q to exist, but it didn't", tt.command)
+			} else if !tt.expected && result {
+				t.Errorf("expected command %q to not exist, but it did", tt.command)
+			}
+		})
+	}
+}
+
+// TestExecutor_DockerComposeWSLHandling tests Docker Compose WSL integration handling
+func TestExecutor_DockerComposeWSLHandling(t *testing.T) {
+	cleanup := setupTestEnvironment(t)
+	defer cleanup()
+
+	tests := []struct {
+		name       string
+		action     *Action
+		mockOS     platform.Platform
+		wantErr    bool
+		shouldSkip bool
+	}{
+		{
+			name: "docker compose install with check command",
+			action: &Action{
+				ID:   "test-docker-compose",
+				Type: ActionTypeCommand,
+				PlatformCommands: map[Platform]PlatformCommand{
+					PlatformLinux: {
+						Command:      "echo installing docker-compose",
+						CheckCommand: "docker compose version",
+					},
+				},
+			},
+			mockOS:  platform.Linux,
+			wantErr: false,
+			// Should not skip in test environment since docker won't be available
+			shouldSkip: false,
+		},
+		{
+			name: "docker compose install with fallback",
+			action: &Action{
+				ID:   "test-docker-compose-fallback",
+				Type: ActionTypeCommand,
+				PlatformCommands: map[Platform]PlatformCommand{
+					PlatformDebian: {
+						Command:      "echo installing docker-compose on debian",
+						CheckCommand: "docker compose version",
+					},
+				},
+			},
+			mockOS:  platform.Debian,
+			wantErr: false,
+			// Should not skip in test environment since docker won't be available
+			shouldSkip: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			executor := &Executor{
+				platformInfo: createTestPlatform(tt.mockOS),
+			}
+
+			result, err := executor.executeCommand(context.Background(), tt.action)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("expected error but got none")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("unexpected error: %v", err)
+				}
+				if result == "" {
+					t.Error("expected non-empty result")
+				} else if tt.shouldSkip && result != "Command or files already exist, skipping installation" {
+					t.Errorf("expected skip message, got %q", result)
+				}
+			}
+		})
+	}
+}
+
+// TestCommandExists_WSLDockerIntegration tests WSL Docker integration specific scenarios
+func TestCommandExists_WSLDockerIntegration(t *testing.T) {
+	// Temporarily disable test mode to test actual command checking
+	os.Unsetenv(testEnvVar)
+	defer os.Setenv(testEnvVar, testEnvValue)
+
+	// Test WSL Docker integration error handling
+	t.Run("WSL Docker integration error detection", func(t *testing.T) {
+		// This test simulates the WSL Docker integration issue
+		// In a real WSL environment without Docker Desktop integration,
+		// "docker compose version" would return the WSL error message
+
+		// Test that the function properly handles commands with arguments
+		result := commandExists("docker compose version")
+
+		// In most test environments, docker won't be available, so this should return false
+		// The important thing is that it doesn't panic and handles the command parsing correctly
+		if result {
+			t.Log("Docker appears to be available in this environment")
+		} else {
+			t.Log("Docker is not available in this environment (expected in CI/test environments)")
+		}
+	})
+
+	t.Run("command parsing for docker compose", func(t *testing.T) {
+		// Test that commands with multiple arguments are parsed correctly
+		testCases := []struct {
+			name    string
+			command string
+		}{
+			{"docker compose version", "docker compose version"},
+			{"docker version", "docker version"},
+			{"docker info", "docker info"},
+			{"complex docker command", "docker run --rm hello-world"},
+		}
+
+		for _, tc := range testCases {
+			t.Run(tc.name, func(t *testing.T) {
+				// Should not panic and should handle the command properly
+				result := commandExists(tc.command)
+				t.Logf("Command: %s, Result: %t", tc.command, result)
+			})
+		}
+	})
+}

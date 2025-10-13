@@ -44,7 +44,6 @@ func (r *Registry) RegisterCategory(parent string, category *Category) error {
 	}
 
 	r.categories[category.ID] = category
-
 	if parent == "" || parent == "root" {
 		r.root.SubCategories = append(r.root.SubCategories, category)
 	} else {
