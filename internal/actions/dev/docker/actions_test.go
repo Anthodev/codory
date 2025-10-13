@@ -33,14 +33,15 @@ func TestInit(t *testing.T) {
 	}
 
 	// Check if the expected actions are registered
-	if len(dockerCategory.Actions) != 3 {
-		t.Fatalf("Expected 3 actions in docker category, got %d", len(dockerCategory.Actions))
+	if len(dockerCategory.Actions) != 4 {
+		t.Fatalf("Expected 4 actions in docker category, got %d", len(dockerCategory.Actions))
 	}
 
 	// Verify all actions are present
 	var installDockerAction *actions.Action
 	var installDockerComposeAction *actions.Action
 	var addUserToDockerGroupAction *actions.Action
+	var installLazydockerAction *actions.Action
 	for _, action := range dockerCategory.Actions {
 		if action.ID == "install_docker" {
 			installDockerAction = action
@@ -48,6 +49,8 @@ func TestInit(t *testing.T) {
 			installDockerComposeAction = action
 		} else if action.ID == "docker_add_user_to_group" {
 			addUserToDockerGroupAction = action
+		} else if action.ID == "install_lazydocker" {
+			installLazydockerAction = action
 		}
 	}
 
@@ -61,6 +64,10 @@ func TestInit(t *testing.T) {
 
 	if addUserToDockerGroupAction == nil {
 		t.Error("docker_add_user_to_group action not found in docker category")
+	}
+
+	if installLazydockerAction == nil {
+		t.Error("install_lazydocker action not found in docker category")
 	}
 
 	if installDockerAction.Name != "Install Docker engine" {
@@ -235,6 +242,10 @@ func TestDockerCategoryActionsHaveCorrectTypes(t *testing.T) {
 			if action.Type != actions.ActionTypeCommand {
 				t.Errorf("Action %s should be of type Command, got %s", action.ID, action.Type)
 			}
+		case "install_lazydocker":
+			if action.Type != actions.ActionTypeCommand {
+				t.Errorf("Action %s should be of type Command, got %s", action.ID, action.Type)
+			}
 		default:
 			t.Errorf("Unknown action %s with type %s", action.ID, action.Type)
 		}
@@ -264,14 +275,15 @@ func TestDockerCategoryRegistrationVerification(t *testing.T) {
 	}
 
 	// Verify docker category has the expected actions
-	if len(dockerCategory.Actions) != 3 {
-		t.Fatalf("Expected 3 actions in docker category, got %d", len(dockerCategory.Actions))
+	if len(dockerCategory.Actions) != 4 {
+		t.Fatalf("Expected 4 actions in docker category, got %d", len(dockerCategory.Actions))
 	}
 
 	// Verify all actions are present
 	var installDockerAction *actions.Action
 	var installDockerComposeAction *actions.Action
 	var addUserToDockerGroupAction *actions.Action
+	var installLazydockerAction *actions.Action
 	for _, action := range dockerCategory.Actions {
 		if action.ID == "install_docker" {
 			installDockerAction = action
@@ -279,6 +291,8 @@ func TestDockerCategoryRegistrationVerification(t *testing.T) {
 			installDockerComposeAction = action
 		} else if action.ID == "docker_add_user_to_group" {
 			addUserToDockerGroupAction = action
+		} else if action.ID == "install_lazydocker" {
+			installLazydockerAction = action
 		}
 	}
 
@@ -292,6 +306,10 @@ func TestDockerCategoryRegistrationVerification(t *testing.T) {
 
 	if addUserToDockerGroupAction == nil {
 		t.Error("docker_add_user_to_group action not found in docker category")
+	}
+
+	if installLazydockerAction == nil {
+		t.Error("install_lazydocker action not found in docker category")
 	}
 
 	// Verify docker category is visible on all platforms

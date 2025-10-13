@@ -32,7 +32,8 @@ func init() {
 	registry.RegisterCategory("dev", dockerCategory)
 
 	// Register actions
-	registry.RegisterAction("docker", NewInstallDockerAction())
+	registry.RegisterAction("docker", InstallDockerAction())
 	registry.RegisterAction("docker", AddCurrentUserToDockerGroupAction())
-	registry.RegisterAction("docker", NewInstallDockerComposeAction())
+	registry.RegisterAction("docker", InstallDockerComposeAction())
+	registry.RegisterAction("docker", InstallLazydocker())
 }
