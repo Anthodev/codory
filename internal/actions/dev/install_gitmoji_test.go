@@ -10,7 +10,7 @@ import (
 // TestNewInstallGitmojiAction tests the creation of the Install Gitmoji action
 // This test verifies the action configuration without executing any actual commands
 func TestNewInstallGitmojiAction(t *testing.T) {
-	action := NewInstallGitmojiAction()
+	action := InstallGitmojiAction()
 
 	if action == nil {
 		t.Fatal("NewInstallGitmojiAction() returned nil")
@@ -44,7 +44,7 @@ func TestNewInstallGitmojiAction(t *testing.T) {
 // TestNewInstallGitmojiAction_PlatformCommands tests that platform commands are correctly configured
 // This test only verifies the command strings without executing them
 func TestNewInstallGitmojiAction_PlatformCommands(t *testing.T) {
-	action := NewInstallGitmojiAction()
+	action := InstallGitmojiAction()
 
 	tests := []struct {
 		name            string
@@ -94,7 +94,7 @@ func TestNewInstallGitmojiAction_PlatformCommands(t *testing.T) {
 // TestNewInstallGitmojiAction_UnsupportedPlatforms verifies that unsupported platforms don't have commands
 // This prevents accidental execution on unsupported systems
 func TestNewInstallGitmojiAction_UnsupportedPlatforms(t *testing.T) {
-	action := NewInstallGitmojiAction()
+	action := InstallGitmojiAction()
 
 	// Test that unsupported platforms don't have commands
 	unsupportedPlatforms := []actions.Platform{
@@ -116,7 +116,7 @@ func TestNewInstallGitmojiAction_UnsupportedPlatforms(t *testing.T) {
 // TestNewInstallGitmojiAction_ActionConsistency verifies that all platform commands have consistent structure
 // This ensures the action is properly configured for safe execution
 func TestNewInstallGitmojiAction_ActionConsistency(t *testing.T) {
-	action := NewInstallGitmojiAction()
+	action := InstallGitmojiAction()
 
 	// Verify that all platform commands have consistent structure
 	for platform, cmd := range action.PlatformCommands {
@@ -138,8 +138,8 @@ func TestNewInstallGitmojiAction_ActionConsistency(t *testing.T) {
 // This ensures the factory function is deterministic and safe
 func TestNewInstallGitmojiAction_MultipleCalls(t *testing.T) {
 	// Test that multiple calls to NewInstallGitmojiAction return equivalent actions
-	action1 := NewInstallGitmojiAction()
-	action2 := NewInstallGitmojiAction()
+	action1 := InstallGitmojiAction()
+	action2 := InstallGitmojiAction()
 
 	if action1.ID != action2.ID {
 		t.Errorf("Expected action IDs to be consistent, got '%s' and '%s'", action1.ID, action2.ID)
@@ -190,7 +190,7 @@ func TestNewInstallGitmojiAction_MultipleCalls(t *testing.T) {
 // TestNewInstallGitmojiAction_ExpectedPlatforms verifies that only expected platforms are configured
 // This prevents accidental execution on unexpected platforms
 func TestNewInstallGitmojiAction_ExpectedPlatforms(t *testing.T) {
-	action := NewInstallGitmojiAction()
+	action := InstallGitmojiAction()
 
 	expectedPlatforms := []actions.Platform{
 		actions.PlatformLinux,
@@ -215,7 +215,7 @@ func TestNewInstallGitmojiAction_ExpectedPlatforms(t *testing.T) {
 // TestNewInstallGitmojiAction_CommandStructure tests that the command uses the correct brew install command
 // This verifies the command structure without executing it
 func TestNewInstallGitmojiAction_CommandStructure(t *testing.T) {
-	action := NewInstallGitmojiAction()
+	action := InstallGitmojiAction()
 
 	// Test that the command uses the correct brew install command
 	expectedCommand := "brew install gitmoji"
@@ -240,7 +240,7 @@ func TestNewInstallGitmojiAction_CommandStructure(t *testing.T) {
 // TestNewInstallGitmojiAction_CheckCommandStructure tests that the check command properly checks for gitmoji
 // This ensures the action won't execute if prerequisites are not met
 func TestNewInstallGitmojiAction_CheckCommandStructure(t *testing.T) {
-	action := NewInstallGitmojiAction()
+	action := InstallGitmojiAction()
 
 	// Test that the check command properly checks for gitmoji
 	expectedCheck := "gitmoji"
@@ -260,7 +260,7 @@ func TestNewInstallGitmojiAction_CheckCommandStructure(t *testing.T) {
 // TestNewInstallGitmojiAction_NoCommandExecution ensures that the test never executes actual commands
 // This is a safety test to verify that we're only testing configuration, not execution
 func TestNewInstallGitmojiAction_NoCommandExecution(t *testing.T) {
-	action := NewInstallGitmojiAction()
+	action := InstallGitmojiAction()
 
 	// Verify that the action is configured as a command type (not function)
 	if action.Type != actions.ActionTypeCommand {
@@ -281,7 +281,7 @@ func TestNewInstallGitmojiAction_NoCommandExecution(t *testing.T) {
 // TestNewInstallGitmojiAction_SafeForCI verifies that the action is safe to use in CI environments
 // This test ensures no actual system commands will be executed during testing
 func TestNewInstallGitmojiAction_SafeForCI(t *testing.T) {
-	action := NewInstallGitmojiAction()
+	action := InstallGitmojiAction()
 
 	// Verify the action has proper check commands to prevent unnecessary execution
 	for platform, cmd := range action.PlatformCommands {
