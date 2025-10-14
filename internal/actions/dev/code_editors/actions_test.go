@@ -33,14 +33,15 @@ func TestInit(t *testing.T) {
 	}
 
 	// Check if the expected actions are registered
-	if len(codeEditorCategory.Actions) != 3 {
-		t.Fatalf("Expected 3 actions in code_editor category, got %d", len(codeEditorCategory.Actions))
+	if len(codeEditorCategory.Actions) != 4 {
+		t.Fatalf("Expected 4 actions in code_editor category, got %d", len(codeEditorCategory.Actions))
 	}
 
 	// Verify all actions are present
 	var installNeovimAction *actions.Action
 	var installLazyVimAction *actions.Action
 	var installHelixAction *actions.Action
+	var installZedAction *actions.Action
 	for _, action := range codeEditorCategory.Actions {
 		if action.ID == "install_neovim" {
 			installNeovimAction = action
@@ -48,6 +49,8 @@ func TestInit(t *testing.T) {
 			installLazyVimAction = action
 		} else if action.ID == "install_helix" {
 			installHelixAction = action
+		} else if action.ID == "install_zed" {
+			installZedAction = action
 		}
 	}
 
@@ -63,8 +66,16 @@ func TestInit(t *testing.T) {
 		t.Error("install_helix action not found in code_editor category")
 	}
 
+	if installZedAction == nil {
+		t.Error("install_zed action not found in code_editor category")
+	}
+
 	if installNeovimAction.Name != "Install Neovim" {
 		t.Errorf("Expected install_neovim action name to be 'Install Neovim', got '%s'", installNeovimAction.Name)
+	}
+
+	if installZedAction.Name != "Install Zed Editor" {
+		t.Errorf("Expected install_zed action name to be 'Install Zed Editor', got '%s'", installZedAction.Name)
 	}
 }
 
@@ -227,6 +238,10 @@ func TestCodeEditorCategoryActionsHaveCorrectTypes(t *testing.T) {
 			if action.Type != actions.ActionTypeCommand {
 				t.Errorf("Action %s should be of type Command, got %s", action.ID, action.Type)
 			}
+		case "install_zed":
+			if action.Type != actions.ActionTypeCommand {
+				t.Errorf("Action %s should be of type Command, got %s", action.ID, action.Type)
+			}
 		default:
 			t.Errorf("Unknown action %s with type %s", action.ID, action.Type)
 		}
@@ -256,8 +271,8 @@ func TestCodeEditorCategoryRegistrationVerification(t *testing.T) {
 	}
 
 	// Verify code_editor category has the expected actions
-	if len(codeEditorCategory.Actions) != 3 {
-		t.Fatalf("Expected 3 actions in code_editor category, got %d", len(codeEditorCategory.Actions))
+	if len(codeEditorCategory.Actions) != 4 {
+		t.Fatalf("Expected 4 actions in code_editor category, got %d", len(codeEditorCategory.Actions))
 	}
 
 	// Verify both actions are present

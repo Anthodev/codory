@@ -89,7 +89,21 @@ func executeAction(action *actions.Action, executor *actions.Executor) tea.Cmd {
 }
 
 // executeInteractiveCommand uses tea.ExecProcess to run interactive commands
-func executeInteractiveCommand(cmdStr string, action *actions.Action) tea.Cmd {
+func executeInteractiveCommand(cmdStr string, action *actions.Action, executor *actions.Executor) tea.Cmd {
+	// Check if the command exists already using the CheckCommand field
+	platform := actions.Platform(executor.GetPlatformInfo().OS)
+	if checkCmd, found := action.GetCheckCommand(platform); found {
+		// Use the executor's CommandExists method to check if the command exists
+		if executor.CommandExists(checkCmd) {
+			return func() tea.Msg {
+				return actionCompleteMsg{
+					result: "Command or files already exist, skipping installation",
+					err:    nil,
+				}
+			}
+		}
+	}
+
 	c := exec.Command("sh", "-c", cmdStr)
 	return tea.ExecProcess(c, func(err error) tea.Msg {
 		if err != nil {
@@ -154,7 +168,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// Check if action is interactive
 			if m.executor.IsInteractiveCommand(action) {
 				if cmdStr, found := m.executor.GetCommandString(action); found {
-					return m, executeInteractiveCommand(cmdStr, action)
+					return m, executeInteractiveCommand(cmdStr, action, m.executor)
 				}
 			}
 
@@ -242,7 +256,7 @@ func (m Model) selectItem() (tea.Model, tea.Cmd) {
 			if cmdStr, found := m.executor.GetCommandString(action); found {
 				m.executingAction = action
 				m.state = stateExecuting
-				return m, executeInteractiveCommand(cmdStr, action)
+				return m, executeInteractiveCommand(cmdStr, action, m.executor)
 			}
 		}
 
@@ -294,7 +308,7 @@ func (m Model) updateInput(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			// Check if this is an interactive command
 			if m.executor.IsInteractiveCommand(m.executingAction) {
 				if cmdStr, found := m.executor.GetCommandString(m.executingAction); found {
-					return m, executeInteractiveCommand(cmdStr, m.executingAction)
+					return m, executeInteractiveCommand(cmdStr, m.executingAction, m.executor)
 				}
 			}
 

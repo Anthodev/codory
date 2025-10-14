@@ -720,6 +720,55 @@ func TestCommandExists(t *testing.T) {
 	}
 }
 
+// TestExecutor_CommandExists tests the public CommandExists method
+func TestExecutor_CommandExists(t *testing.T) {
+	cleanup := setupTestEnvironment(t)
+	defer cleanup()
+
+	executor := NewExecutor()
+
+	tests := []struct {
+		name     string
+		command  string
+		expected bool
+	}{
+		{
+			name:     "simple command that should exist - echo",
+			command:  "echo",
+			expected: true,
+		},
+		{
+			name:     "command with arguments - echo test",
+			command:  "echo test",
+			expected: true,
+		},
+		{
+			name:     "any command in test mode returns true",
+			command:  "nonexistentcommand12345",
+			expected: true, // In test mode, all commands return true
+		},
+		{
+			name:     "complex shell command with test",
+			command:  "test -d /tmp",
+			expected: true,
+		},
+		{
+			name:     "any test command in test mode returns true",
+			command:  "test -d /nonexistentdirectory12345",
+			expected: true, // In test mode, all commands return true
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := executor.CommandExists(tt.command)
+			if result != tt.expected {
+				t.Errorf("CommandExists(%q) = %v, want %v", tt.command, result, tt.expected)
+			}
+		})
+	}
+}
+
 // TestExecutor_DockerComposeWSLHandling tests Docker Compose WSL integration handling
 func TestExecutor_DockerComposeWSLHandling(t *testing.T) {
 	cleanup := setupTestEnvironment(t)

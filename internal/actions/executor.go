@@ -227,3 +227,8 @@ func commandExists(cmd string) bool {
 	// For simple single commands that passed LookPath, they exist
 	return true
 }
+
+// CommandExists checks if a command or file exists (public wrapper)
+func (e *Executor) CommandExists(cmd string) bool {
+	return commandExists(cmd)
+}
