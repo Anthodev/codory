@@ -291,9 +291,9 @@ func TestInstallLazygit_WindowsCommandStructure(t *testing.T) {
 		t.Error("Windows command should use winget package manager")
 	}
 
-	// Verify the command installs JesseDuffield.Lazygit
-	if !utils.Contains(cmd.Command, "JesseDuffield.Lazygit") {
-		t.Error("Windows command should install JesseDuffield.Lazygit")
+	// Verify the command installs JesseDuffield.lazygit
+	if !utils.Contains(cmd.Command, "JesseDuffield.lazygit") {
+		t.Error("Windows command should install JesseDuffield.lazygit")
 	}
 }
 
