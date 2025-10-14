@@ -57,7 +57,7 @@ func TestInstallHelix_PlatformCommands(t *testing.T) {
 			platform:            actions.PlatformArch,
 			expectedCommand:     "sudo pacman -S helix",
 			expectedSource:      actions.PackageSourceOfficial,
-			expectedCheck:       "hx",
+			expectedCheck:       "helix",
 			expectedInteractive: true,
 		},
 		{
@@ -65,7 +65,7 @@ func TestInstallHelix_PlatformCommands(t *testing.T) {
 			platform:            actions.PlatformDebian,
 			expectedCommand:     "sudo add-apt-repository ppa:maveonair/helix-editor && sudo apt-get update && sudo apt install helix",
 			expectedSource:      actions.PackageSourceOfficial,
-			expectedCheck:       "hx",
+			expectedCheck:       "helix",
 			expectedInteractive: true,
 		},
 		{
@@ -73,7 +73,7 @@ func TestInstallHelix_PlatformCommands(t *testing.T) {
 			platform:            actions.PlatformLinux,
 			expectedCommand:     "brew install helix",
 			expectedSource:      actions.PackageSourceBrew,
-			expectedCheck:       "hx",
+			expectedCheck:       "helix",
 			expectedInteractive: false,
 		},
 		{
@@ -81,7 +81,7 @@ func TestInstallHelix_PlatformCommands(t *testing.T) {
 			platform:            actions.PlatformMacOS,
 			expectedCommand:     "brew install helix",
 			expectedSource:      actions.PackageSourceBrew,
-			expectedCheck:       "hx",
+			expectedCheck:       "helix",
 			expectedInteractive: false,
 		},
 	}
@@ -155,7 +155,7 @@ func TestInstallHelix_ActionConsistency(t *testing.T) {
 		}
 
 		// Verify that check command is consistent across platforms
-		expectedCheck := "hx"
+		expectedCheck := "helix"
 		if cmd.CheckCommand != expectedCheck {
 			t.Errorf("Platform %s has unexpected check command '%s', expected '%s'", platform, cmd.CheckCommand, expectedCheck)
 		}
@@ -372,15 +372,15 @@ func TestInstallHelix_CheckCommandStructure(t *testing.T) {
 	action := InstallHelix()
 
 	// Test that the check command properly checks for helix
-	expectedCheck := "hx"
+	expectedCheck := "helix"
 
 	for platform, cmd := range action.PlatformCommands {
 		if cmd.CheckCommand != expectedCheck {
 			t.Errorf("Platform %s has unexpected check command: '%s'", platform, cmd.CheckCommand)
 		}
 
-		// Verify the check command tests for hx (helix)
-		if !utils.Contains(cmd.CheckCommand, "hx") {
+		// Verify the check command tests for helix (helix)
+		if !utils.Contains(cmd.CheckCommand, "helix") {
 			t.Errorf("Platform %s check command should verify helix dependency first", platform)
 		}
 	}
@@ -419,7 +419,7 @@ func TestInstallHelix_SafeForCI(t *testing.T) {
 		}
 
 		// Verify check command includes dependency checks
-		if !utils.Contains(cmd.CheckCommand, "hx") {
+		if !utils.Contains(cmd.CheckCommand, "helix") {
 			t.Errorf("Platform %s check command should verify helix dependency first", platform)
 		}
 	}
@@ -559,7 +559,7 @@ func TestInstallHelix_InteractiveFlagConsistency(t *testing.T) {
 func TestInstallHelix_CheckCommandConsistency(t *testing.T) {
 	action := InstallHelix()
 
-	expectedCheck := "hx"
+	expectedCheck := "helix"
 	for platform, cmd := range action.PlatformCommands {
 		if cmd.CheckCommand != expectedCheck {
 			t.Errorf("Platform %s has unexpected check command '%s', expected '%s'", platform, cmd.CheckCommand, expectedCheck)

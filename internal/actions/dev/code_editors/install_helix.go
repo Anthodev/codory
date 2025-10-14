@@ -12,24 +12,24 @@ func InstallHelix() *actions.Action {
 			actions.PlatformArch: {
 				Command:       "sudo pacman -S helix",
 				PackageSource: actions.PackageSourceOfficial,
-				CheckCommand:  "hx",
+				CheckCommand:  "helix",
 				Interactive:   true,
 			},
 			actions.PlatformDebian: {
 				Command:       "sudo add-apt-repository ppa:maveonair/helix-editor && sudo apt-get update && sudo apt install helix",
 				PackageSource: actions.PackageSourceOfficial,
-				CheckCommand:  "hx",
+				CheckCommand:  "helix",
 				Interactive:   true,
 			},
 			actions.PlatformLinux: {
 				Command:       "brew install helix",
 				PackageSource: actions.PackageSourceBrew,
-				CheckCommand:  "hx",
+				CheckCommand:  "helix",
 			},
 			actions.PlatformMacOS: {
 				Command:       "brew install helix",
 				PackageSource: actions.PackageSourceBrew,
-				CheckCommand:  "hx",
+				CheckCommand:  "helix",
 			},
 		},
 	}
