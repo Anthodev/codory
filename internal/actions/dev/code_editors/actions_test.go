@@ -33,8 +33,8 @@ func TestInit(t *testing.T) {
 	}
 
 	// Check if the expected actions are registered
-	if len(codeEditorCategory.Actions) != 4 {
-		t.Fatalf("Expected 4 actions in code_editor category, got %d", len(codeEditorCategory.Actions))
+	if len(codeEditorCategory.Actions) != 5 {
+		t.Fatalf("Expected 5 actions in code_editor category, got %d", len(codeEditorCategory.Actions))
 	}
 
 	// Verify all actions are present
@@ -42,6 +42,7 @@ func TestInit(t *testing.T) {
 	var installLazyVimAction *actions.Action
 	var installHelixAction *actions.Action
 	var installZedAction *actions.Action
+	var installVsCodeAction *actions.Action
 	for _, action := range codeEditorCategory.Actions {
 		if action.ID == "install_neovim" {
 			installNeovimAction = action
@@ -51,6 +52,8 @@ func TestInit(t *testing.T) {
 			installHelixAction = action
 		} else if action.ID == "install_zed" {
 			installZedAction = action
+		} else if action.ID == "install_vscode" {
+			installVsCodeAction = action
 		}
 	}
 
@@ -68,6 +71,10 @@ func TestInit(t *testing.T) {
 
 	if installZedAction == nil {
 		t.Error("install_zed action not found in code_editor category")
+	}
+
+	if installVsCodeAction == nil {
+		t.Error("install_vscode action not found in code_editor category")
 	}
 
 	if installNeovimAction.Name != "Install Neovim" {
@@ -242,6 +249,10 @@ func TestCodeEditorCategoryActionsHaveCorrectTypes(t *testing.T) {
 			if action.Type != actions.ActionTypeCommand {
 				t.Errorf("Action %s should be of type Command, got %s", action.ID, action.Type)
 			}
+		case "install_vscode":
+			if action.Type != actions.ActionTypeCommand {
+				t.Errorf("Action %s should be of type Command, got %s", action.ID, action.Type)
+			}
 		default:
 			t.Errorf("Unknown action %s with type %s", action.ID, action.Type)
 		}
@@ -271,8 +282,8 @@ func TestCodeEditorCategoryRegistrationVerification(t *testing.T) {
 	}
 
 	// Verify code_editor category has the expected actions
-	if len(codeEditorCategory.Actions) != 4 {
-		t.Fatalf("Expected 4 actions in code_editor category, got %d", len(codeEditorCategory.Actions))
+	if len(codeEditorCategory.Actions) != 5 {
+		t.Fatalf("Expected 5 actions in code_editor category, got %d", len(codeEditorCategory.Actions))
 	}
 
 	// Verify both actions are present

@@ -32,7 +32,7 @@ func InstallDockerAction() *actions.Action {
 				CheckCommand:  "docker",
 			},
 			actions.PlatformWindows: {
-				Command:       "winget install Docker.DockerDesktop",
+				Command:       "winget install -e --id Docker.DockerDesktop",
 				PackageSource: actions.PackageSourceWinget,
 				CheckCommand:  "docker",
 			},

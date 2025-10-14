@@ -20,7 +20,7 @@ func InstallLazydocker() *actions.Action {
 				CheckCommand:  "lazydocker",
 			},
 			actions.PlatformWindows: {
-				Command:       "winget install JesseDuffield.Lazydocker",
+				Command:       "winget install -e --id JesseDuffield.Lazydocker",
 				PackageSource: actions.PackageSourceWinget,
 				CheckCommand:  "lazydocker",
 			},

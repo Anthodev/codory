@@ -68,7 +68,7 @@ func TestInstallLazygit_PlatformCommands(t *testing.T) {
 		{
 			name:            "Windows platform",
 			platform:        actions.PlatformWindows,
-			expectedCommand: "winget install JesseDuffield.Lazygit",
+			expectedCommand: "winget install -e --id JesseDuffield.lazygit",
 			expectedSource:  actions.PackageSourceWinget,
 			expectedCheck:   "lazygit",
 		},
@@ -281,7 +281,7 @@ func TestInstallLazygit_WindowsCommandStructure(t *testing.T) {
 		t.Fatal("Expected Windows platform command to exist")
 	}
 
-	expectedCommand := "winget install JesseDuffield.Lazygit"
+	expectedCommand := "winget install -e --id JesseDuffield.lazygit"
 	if cmd.Command != expectedCommand {
 		t.Errorf("Expected Windows command to be '%s', got '%s'", expectedCommand, cmd.Command)
 	}

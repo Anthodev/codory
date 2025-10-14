@@ -68,7 +68,7 @@ func TestInstallLazydocker_PlatformCommands(t *testing.T) {
 		{
 			name:            "Windows platform",
 			platform:        actions.PlatformWindows,
-			expectedCommand: "winget install JesseDuffield.Lazydocker",
+			expectedCommand: "winget install -e --id JesseDuffield.Lazydocker",
 			expectedSource:  actions.PackageSourceWinget,
 			expectedCheck:   "lazydocker",
 		},
@@ -281,7 +281,7 @@ func TestInstallLazydocker_WindowsCommandStructure(t *testing.T) {
 		t.Fatal("Expected Windows platform command to exist")
 	}
 
-	expectedCommand := "winget install JesseDuffield.Lazydocker"
+	expectedCommand := "winget install -e --id JesseDuffield.Lazydocker"
 	if cmd.Command != expectedCommand {
 		t.Errorf("Expected Windows command to be '%s', got '%s'", expectedCommand, cmd.Command)
 	}

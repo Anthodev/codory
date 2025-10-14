@@ -20,7 +20,7 @@ func InstallLazygit() *actions.Action {
 				CheckCommand:  "lazygit",
 			},
 			actions.PlatformWindows: {
-				Command:       "winget install JesseDuffield.Lazygit",
+				Command:       "winget install -e --id JesseDuffield.lazygit",
 				PackageSource: actions.PackageSourceWinget,
 				CheckCommand:  "lazygit",
 			},
