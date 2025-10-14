@@ -46,7 +46,7 @@ func (e *Executor) Execute(ctx context.Context, action *Action) (string, error) 
 func (e *Executor) executeCommand(ctx context.Context, action *Action) (string, error) {
 	platformCmd, found := action.GetPlatformCommand(Platform(e.platformInfo.OS))
 	if !found {
-		// Essayer avec le platform générique (Linux pour toutes les distros Linux)
+		// Try with generic platform (Linux for all Linux distros)
 		if e.platformInfo.OS == platform.Debian || e.platformInfo.OS == platform.Arch {
 			platformCmd, found = action.GetPlatformCommand(PlatformLinux)
 		}
@@ -75,8 +75,15 @@ func (e *Executor) executeCommand(ctx context.Context, action *Action) (string, 
 	// Execute the command
 	cmdStr := platformCmd.Command
 
+	// For interactive commands, return special marker - the TUI will handle suspension
+	if platformCmd.Interactive {
+		return "", fmt.Errorf("INTERACTIVE_COMMAND:%s", cmdStr)
+	}
+
 	// Check if the command contains shell special characters that require shell execution
-	if strings.Contains(cmdStr, "$") || strings.Contains(cmdStr, "|") || strings.Contains(cmdStr, "&&") || strings.Contains(cmdStr, "||") || strings.Contains(cmdStr, ";") {
+	if strings.Contains(cmdStr, "$") || strings.Contains(cmdStr, "|") ||
+		strings.Contains(cmdStr, "&&") || strings.Contains(cmdStr, "||") ||
+		strings.Contains(cmdStr, ";") {
 		// Use shell to execute complex commands
 		cmd := exec.CommandContext(ctx, "sh", "-c", cmdStr)
 		output, err := cmd.CombinedOutput()
@@ -90,7 +97,7 @@ func (e *Executor) executeCommand(ctx context.Context, action *Action) (string, 
 		return string(output), nil
 	}
 
-	// For simple commands, use the original logic
+	// For simple commands, use direct execution
 	parts := strings.Fields(cmdStr)
 	if len(parts) == 0 {
 		return "", fmt.Errorf("empty command")
@@ -110,6 +117,7 @@ func (e *Executor) executeCommand(ctx context.Context, action *Action) (string, 
 	return string(output), nil
 }
 
+// checkPackageManagerDependency checks if required package manager is available
 func (e *Executor) checkPackageManagerDependency(ctx context.Context, source PackageSource) error {
 	switch source {
 	case PackageSourceAUR:
@@ -124,6 +132,7 @@ func (e *Executor) checkPackageManagerDependency(ctx context.Context, source Pac
 	return nil
 }
 
+// NeedsPackageManagerInstallation checks if an action needs a package manager to be installed
 func (e *Executor) NeedsPackageManagerInstallation(action *Action) (bool, PackageSource) {
 	platformCmd, found := action.GetPlatformCommand(Platform(e.platformInfo.OS))
 	if !found {
@@ -150,9 +159,38 @@ func (e *Executor) GetPlatformInfo() platform.Info {
 	return e.platformInfo
 }
 
+// GetCommandString returns the command string for an action on the current platform
+func (e *Executor) GetCommandString(action *Action) (string, bool) {
+	platformCmd, found := action.GetPlatformCommand(Platform(e.platformInfo.OS))
+	if !found {
+		if e.platformInfo.OS == platform.Debian || e.platformInfo.OS == platform.Arch {
+			platformCmd, found = action.GetPlatformCommand(PlatformLinux)
+		}
+		if !found {
+			return "", false
+		}
+	}
+	return platformCmd.Command, true
+}
+
+// IsInteractiveCommand checks if an action requires interactive execution
+func (e *Executor) IsInteractiveCommand(action *Action) bool {
+	platformCmd, found := action.GetPlatformCommand(Platform(e.platformInfo.OS))
+	if !found {
+		if e.platformInfo.OS == platform.Debian || e.platformInfo.OS == platform.Arch {
+			platformCmd, found = action.GetPlatformCommand(PlatformLinux)
+		}
+		if !found {
+			return false
+		}
+	}
+	return platformCmd.Interactive
+}
+
+// commandExists checks if a command or file exists
 func commandExists(cmd string) bool {
 	// In test mode, don't execute actual commands - just return true
-	// This prevents CI failures when commands like 'which zsh' are not available
+	// This prevents CI failures when commands are not available
 	if os.Getenv("CODORY_TEST") == "1" {
 		return true
 	}

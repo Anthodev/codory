@@ -34,4 +34,5 @@ func init() {
 	// Register actions
 	registry.RegisterAction("code_editor", InstallNeovim())
 	registry.RegisterAction("code_editor", InstallLazyVim())
+	registry.RegisterAction("code_editor", InstallHelix())
 }

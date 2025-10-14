@@ -40,6 +40,7 @@ type PlatformCommand struct {
 	Command       string
 	PackageSource PackageSource
 	CheckCommand  string
+	Interactive   bool // Whether this command requires user interaction
 }
 
 type ActionArgument struct {

@@ -794,6 +794,238 @@ func TestExecutor_DockerComposeWSLHandling(t *testing.T) {
 	}
 }
 
+func TestExecutor_GetCommandString(t *testing.T) {
+	executor := NewExecutor()
+
+	tests := []struct {
+		name        string
+		action      *Action
+		wantCmd     string
+		wantFound   bool
+		description string
+	}{
+		{
+			name: "action with command for current platform",
+			action: &Action{
+				ID:   "test_action",
+				Type: ActionTypeCommand,
+				PlatformCommands: map[Platform]PlatformCommand{
+					Platform(executor.GetPlatformInfo().OS): {
+						Command: "echo test",
+					},
+				},
+			},
+			wantCmd:     "echo test",
+			wantFound:   true,
+			description: "should return command for current platform",
+		},
+		{
+			name: "action with PlatformLinux fallback for Debian",
+			action: &Action{
+				ID:   "test_action",
+				Type: ActionTypeCommand,
+				PlatformCommands: map[Platform]PlatformCommand{
+					PlatformLinux: {
+						Command: "echo linux",
+					},
+				},
+			},
+			wantCmd:     "echo linux",
+			wantFound:   true,
+			description: "should fallback to PlatformLinux for Debian/Arch",
+		},
+		{
+			name: "action without command for platform",
+			action: &Action{
+				ID:               "test_action",
+				Type:             ActionTypeCommand,
+				PlatformCommands: map[Platform]PlatformCommand{},
+			},
+			wantCmd:     "",
+			wantFound:   false,
+			description: "should return not found for missing platform",
+		},
+		{
+			name: "action with complex shell command",
+			action: &Action{
+				ID:   "test_action",
+				Type: ActionTypeCommand,
+				PlatformCommands: map[Platform]PlatformCommand{
+					Platform(executor.GetPlatformInfo().OS): {
+						Command: "curl -fsSL https://example.com | sh",
+					},
+				},
+			},
+			wantCmd:     "curl -fsSL https://example.com | sh",
+			wantFound:   true,
+			description: "should return complex shell command",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotCmd, gotFound := executor.GetCommandString(tt.action)
+
+			if gotFound != tt.wantFound {
+				t.Errorf("GetCommandString() found = %v, want %v", gotFound, tt.wantFound)
+			}
+
+			if gotCmd != tt.wantCmd {
+				t.Errorf("GetCommandString() cmd = %v, want %v", gotCmd, tt.wantCmd)
+			}
+		})
+	}
+}
+
+func TestExecutor_IsInteractiveCommand(t *testing.T) {
+	executor := NewExecutor()
+
+	tests := []struct {
+		name        string
+		action      *Action
+		want        bool
+		description string
+	}{
+		{
+			name: "interactive command",
+			action: &Action{
+				ID:   "install_helix",
+				Type: ActionTypeCommand,
+				PlatformCommands: map[Platform]PlatformCommand{
+					Platform(executor.GetPlatformInfo().OS): {
+						Command:     "sudo pacman -S helix",
+						Interactive: true,
+					},
+				},
+			},
+			want:        true,
+			description: "should detect interactive command",
+		},
+		{
+			name: "non-interactive command",
+			action: &Action{
+				ID:   "install_something",
+				Type: ActionTypeCommand,
+				PlatformCommands: map[Platform]PlatformCommand{
+					Platform(executor.GetPlatformInfo().OS): {
+						Command:     "echo test",
+						Interactive: false,
+					},
+				},
+			},
+			want:        false,
+			description: "should detect non-interactive command",
+		},
+		{
+			name: "command with no Interactive flag (defaults to false)",
+			action: &Action{
+				ID:   "install_something",
+				Type: ActionTypeCommand,
+				PlatformCommands: map[Platform]PlatformCommand{
+					Platform(executor.GetPlatformInfo().OS): {
+						Command: "echo test",
+					},
+				},
+			},
+			want:        false,
+			description: "should default to non-interactive",
+		},
+		{
+			name: "interactive command with PlatformLinux fallback",
+			action: &Action{
+				ID:   "install_interactive",
+				Type: ActionTypeCommand,
+				PlatformCommands: map[Platform]PlatformCommand{
+					PlatformLinux: {
+						Command:     "sudo apt install something",
+						Interactive: true,
+					},
+				},
+			},
+			want:        true,
+			description: "should detect interactive with fallback platform",
+		},
+		{
+			name: "action without platform command",
+			action: &Action{
+				ID:               "test_action",
+				Type:             ActionTypeCommand,
+				PlatformCommands: map[Platform]PlatformCommand{},
+			},
+			want:        false,
+			description: "should return false for missing platform",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := executor.IsInteractiveCommand(tt.action)
+
+			if got != tt.want {
+				t.Errorf("IsInteractiveCommand() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestExecutor_InteractiveCommandExecution(t *testing.T) {
+	executor := NewExecutor()
+	ctx := context.Background()
+
+	tests := []struct {
+		name           string
+		action         *Action
+		wantErrContain string
+		description    string
+	}{
+		{
+			name: "interactive command returns special error",
+			action: &Action{
+				ID:   "install_helix",
+				Type: ActionTypeCommand,
+				PlatformCommands: map[Platform]PlatformCommand{
+					Platform(executor.GetPlatformInfo().OS): {
+						Command:     "sudo pacman -S helix",
+						Interactive: true,
+					},
+				},
+			},
+			wantErrContain: "INTERACTIVE_COMMAND:",
+			description:    "should return INTERACTIVE_COMMAND error for interactive actions",
+		},
+		{
+			name: "interactive command includes command string in error",
+			action: &Action{
+				ID:   "install_something",
+				Type: ActionTypeCommand,
+				PlatformCommands: map[Platform]PlatformCommand{
+					Platform(executor.GetPlatformInfo().OS): {
+						Command:     "sudo apt install something",
+						Interactive: true,
+					},
+				},
+			},
+			wantErrContain: "sudo apt install something",
+			description:    "should include command string in error message",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := executor.Execute(ctx, tt.action)
+
+			if err == nil {
+				t.Errorf("Execute() expected error for interactive command, got nil")
+				return
+			}
+
+			if !strings.Contains(err.Error(), tt.wantErrContain) {
+				t.Errorf("Execute() error = %v, should contain %v", err.Error(), tt.wantErrContain)
+			}
+		})
+	}
+}
+
 // TestCommandExists_WSLDockerIntegration tests WSL Docker integration specific scenarios
 func TestCommandExists_WSLDockerIntegration(t *testing.T) {
 	// Temporarily disable test mode to test actual command checking

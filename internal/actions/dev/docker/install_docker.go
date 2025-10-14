@@ -13,11 +13,13 @@ func InstallDockerAction() *actions.Action {
 				Command:       "sudo pacman -S docker",
 				PackageSource: actions.PackageSourceOfficial,
 				CheckCommand:  "docker",
+				Interactive:   true,
 			},
 			actions.PlatformDebian: {
 				Command:       "sudo apt get install docker",
 				PackageSource: actions.PackageSourceOfficial,
 				CheckCommand:  "docker",
+				Interactive:   true,
 			},
 			actions.PlatformLinux: {
 				Command:       "curl -fsSL https://get.docker.com -o get-docker.sh && sh get-docker.sh",

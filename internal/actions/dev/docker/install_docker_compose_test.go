@@ -45,39 +45,44 @@ func TestNewInstallDockerComposeAction_PlatformCommands(t *testing.T) {
 	action := InstallDockerComposeAction()
 
 	tests := []struct {
-		name            string
-		platform        actions.Platform
-		expectedCommand string
-		expectedSource  actions.PackageSource
-		expectedCheck   string
+		name                string
+		platform            actions.Platform
+		expectedCommand     string
+		expectedSource      actions.PackageSource
+		expectedCheck       string
+		expectedInteractive bool
 	}{
 		{
-			name:            "Arch platform",
-			platform:        actions.PlatformArch,
-			expectedCommand: "sudo pacman -S docker-compose",
-			expectedSource:  actions.PackageSourceOfficial,
-			expectedCheck:   "docker compose version",
+			name:                "Arch platform",
+			platform:            actions.PlatformArch,
+			expectedCommand:     "sudo pacman -S docker-compose",
+			expectedSource:      actions.PackageSourceOfficial,
+			expectedCheck:       "docker compose version",
+			expectedInteractive: true,
 		},
 		{
-			name:            "Debian platform",
-			platform:        actions.PlatformDebian,
-			expectedCommand: "sudo apt install docker-compose",
-			expectedSource:  actions.PackageSourceOfficial,
-			expectedCheck:   "docker compose version",
+			name:                "Debian platform",
+			platform:            actions.PlatformDebian,
+			expectedCommand:     "sudo apt install docker-compose",
+			expectedSource:      actions.PackageSourceOfficial,
+			expectedCheck:       "docker compose version",
+			expectedInteractive: true,
 		},
 		{
-			name:            "Linux platform",
-			platform:        actions.PlatformLinux,
-			expectedCommand: "brew install docker-compose",
-			expectedSource:  actions.PackageSourceBrew,
-			expectedCheck:   "docker compose version",
+			name:                "Linux platform",
+			platform:            actions.PlatformLinux,
+			expectedCommand:     "brew install docker-compose",
+			expectedSource:      actions.PackageSourceBrew,
+			expectedCheck:       "docker compose version",
+			expectedInteractive: false,
 		},
 		{
-			name:            "macOS platform",
-			platform:        actions.PlatformMacOS,
-			expectedCommand: "brew install docker-compose",
-			expectedSource:  actions.PackageSourceBrew,
-			expectedCheck:   "docker compose version",
+			name:                "macOS platform",
+			platform:            actions.PlatformMacOS,
+			expectedCommand:     "brew install docker-compose",
+			expectedSource:      actions.PackageSourceBrew,
+			expectedCheck:       "docker compose version",
+			expectedInteractive: false,
 		},
 	}
 
@@ -98,6 +103,10 @@ func TestNewInstallDockerComposeAction_PlatformCommands(t *testing.T) {
 
 			if cmd.CheckCommand != tt.expectedCheck {
 				t.Errorf("Expected check command for %s to be '%s', got '%s'", tt.platform, tt.expectedCheck, cmd.CheckCommand)
+			}
+
+			if cmd.Interactive != tt.expectedInteractive {
+				t.Errorf("Expected interactive for %s to be %t, got %t", tt.platform, tt.expectedInteractive, cmd.Interactive)
 			}
 		})
 	}
@@ -143,6 +152,17 @@ func TestNewInstallDockerComposeAction_ActionConsistency(t *testing.T) {
 
 		if cmd.PackageSource == "" {
 			t.Errorf("Platform %s has empty package source", platform)
+		}
+
+		// Verify interactive flag is set appropriately
+		if platform == actions.PlatformArch || platform == actions.PlatformDebian {
+			if !cmd.Interactive {
+				t.Errorf("Platform %s should have interactive=true for package manager commands", platform)
+			}
+		} else {
+			if cmd.Interactive {
+				t.Errorf("Platform %s should have interactive=false for brew commands", platform)
+			}
 		}
 
 		// Verify that check command is consistent across platforms
@@ -198,6 +218,10 @@ func TestNewInstallDockerComposeAction_MultipleCalls(t *testing.T) {
 
 		if cmd1.CheckCommand != cmd2.CheckCommand {
 			t.Errorf("Platform %s check commands differ: '%s' vs '%s'", platform, cmd1.CheckCommand, cmd2.CheckCommand)
+		}
+
+		if cmd1.Interactive != cmd2.Interactive {
+			t.Errorf("Platform %s interactive flags differ: %t vs %t", platform, cmd1.Interactive, cmd2.Interactive)
 		}
 	}
 }

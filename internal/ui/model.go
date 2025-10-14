@@ -3,6 +3,7 @@ package ui
 import (
 	"context"
 	"fmt"
+	"os/exec"
 	"strings"
 
 	"anthodev/codory/internal/actions"
@@ -87,6 +88,27 @@ func executeAction(action *actions.Action, executor *actions.Executor) tea.Cmd {
 	}
 }
 
+// executeInteractiveCommand uses tea.ExecProcess to run interactive commands
+func executeInteractiveCommand(cmdStr string, action *actions.Action) tea.Cmd {
+	c := exec.Command("sh", "-c", cmdStr)
+	return tea.ExecProcess(c, func(err error) tea.Msg {
+		if err != nil {
+			return actionCompleteMsg{
+				result: "",
+				err:    err,
+			}
+		}
+		successMsg := "Interactive command completed successfully"
+		if action.SuccessMessage != "" {
+			successMsg = action.SuccessMessage
+		}
+		return actionCompleteMsg{
+			result: successMsg,
+			err:    nil,
+		}
+	})
+}
+
 func executeActionWithArgs(action *actions.Action, executor *actions.Executor, args []string) tea.Cmd {
 	return func() tea.Msg {
 		// Store args in context using your custom key
@@ -120,7 +142,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.result = msg.result
 		m.err = msg.err
 
-		// Si c'était l'installation d'un package manager, exécuter l'action en attente
+		// If package manager was installed, execute pending action
 		if m.pendingAction != nil && m.needsPackageManager && msg.err == nil {
 			action := m.pendingAction
 			m.pendingAction = nil
@@ -128,6 +150,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.packageManagerType = ""
 			m.executingAction = action
 			m.state = stateExecuting
+
+			// Check if action is interactive
+			if m.executor.IsInteractiveCommand(action) {
+				if cmdStr, found := m.executor.GetCommandString(action); found {
+					return m, executeInteractiveCommand(cmdStr, action)
+				}
+			}
+
 			return m, executeAction(action, m.executor)
 		}
 
@@ -135,6 +165,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.needsPackageManager = false
 		m.packageManagerType = ""
 		return m, nil
+
 	}
 
 	return m, nil
@@ -206,6 +237,15 @@ func (m Model) selectItem() (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 
+		// Check if this is an interactive command
+		if m.executor.IsInteractiveCommand(action) {
+			if cmdStr, found := m.executor.GetCommandString(action); found {
+				m.executingAction = action
+				m.state = stateExecuting
+				return m, executeInteractiveCommand(cmdStr, action)
+			}
+		}
+
 		m.executingAction = action
 		m.state = stateExecuting
 		return m, executeAction(action, m.executor)
@@ -250,6 +290,14 @@ func (m Model) updateInput(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		if m.currentInput >= len(m.executingAction.Arguments) {
 			// Execute the action with collected args
 			m.state = stateExecuting
+
+			// Check if this is an interactive command
+			if m.executor.IsInteractiveCommand(m.executingAction) {
+				if cmdStr, found := m.executor.GetCommandString(m.executingAction); found {
+					return m, executeInteractiveCommand(cmdStr, m.executingAction)
+				}
+			}
+
 			return m, executeActionWithArgs(m.executingAction, m.executor, m.collectedArgs)
 		}
 

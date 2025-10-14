@@ -45,46 +45,52 @@ func TestNewInstallDockerAction_PlatformCommands(t *testing.T) {
 	action := InstallDockerAction()
 
 	tests := []struct {
-		name            string
-		platform        actions.Platform
-		expectedCommand string
-		expectedSource  actions.PackageSource
-		expectedCheck   string
+		name                string
+		platform            actions.Platform
+		expectedCommand     string
+		expectedSource      actions.PackageSource
+		expectedCheck       string
+		expectedInteractive bool
 	}{
 		{
-			name:            "Arch platform",
-			platform:        actions.PlatformArch,
-			expectedCommand: "sudo pacman -S docker",
-			expectedSource:  actions.PackageSourceOfficial,
-			expectedCheck:   "docker",
+			name:                "Arch platform",
+			platform:            actions.PlatformArch,
+			expectedCommand:     "sudo pacman -S docker",
+			expectedSource:      actions.PackageSourceOfficial,
+			expectedCheck:       "docker",
+			expectedInteractive: true,
 		},
 		{
-			name:            "Debian platform",
-			platform:        actions.PlatformDebian,
-			expectedCommand: "sudo apt get install docker",
-			expectedSource:  actions.PackageSourceOfficial,
-			expectedCheck:   "docker",
+			name:                "Debian platform",
+			platform:            actions.PlatformDebian,
+			expectedCommand:     "sudo apt get install docker",
+			expectedSource:      actions.PackageSourceOfficial,
+			expectedCheck:       "docker",
+			expectedInteractive: true,
 		},
 		{
-			name:            "Linux platform",
-			platform:        actions.PlatformLinux,
-			expectedCommand: "curl -fsSL https://get.docker.com -o get-docker.sh && sh get-docker.sh",
-			expectedSource:  actions.PackageSourceAny,
-			expectedCheck:   "docker",
+			name:                "Linux platform",
+			platform:            actions.PlatformLinux,
+			expectedCommand:     "curl -fsSL https://get.docker.com -o get-docker.sh && sh get-docker.sh",
+			expectedSource:      actions.PackageSourceAny,
+			expectedCheck:       "docker",
+			expectedInteractive: false,
 		},
 		{
-			name:            "macOS platform",
-			platform:        actions.PlatformMacOS,
-			expectedCommand: "brew install docker",
-			expectedSource:  actions.PackageSourceAny,
-			expectedCheck:   "docker",
+			name:                "macOS platform",
+			platform:            actions.PlatformMacOS,
+			expectedCommand:     "brew install docker",
+			expectedSource:      actions.PackageSourceAny,
+			expectedCheck:       "docker",
+			expectedInteractive: false,
 		},
 		{
-			name:            "Windows platform",
-			platform:        actions.PlatformWindows,
-			expectedCommand: "winget install Docker.DockerDesktop",
-			expectedSource:  actions.PackageSourceWinget,
-			expectedCheck:   "docker",
+			name:                "Windows platform",
+			platform:            actions.PlatformWindows,
+			expectedCommand:     "winget install Docker.DockerDesktop",
+			expectedSource:      actions.PackageSourceWinget,
+			expectedCheck:       "docker",
+			expectedInteractive: false,
 		},
 	}
 
@@ -105,6 +111,10 @@ func TestNewInstallDockerAction_PlatformCommands(t *testing.T) {
 
 			if cmd.CheckCommand != tt.expectedCheck {
 				t.Errorf("Expected check command for %s to be '%s', got '%s'", tt.platform, tt.expectedCheck, cmd.CheckCommand)
+			}
+
+			if cmd.Interactive != tt.expectedInteractive {
+				t.Errorf("Expected interactive for %s to be %t, got %t", tt.platform, tt.expectedInteractive, cmd.Interactive)
 			}
 		})
 	}
@@ -156,6 +166,17 @@ func TestNewInstallDockerAction_ActionConsistency(t *testing.T) {
 		if cmd.CheckCommand != expectedCheck {
 			t.Errorf("Platform %s has unexpected check command '%s', expected '%s'", platform, cmd.CheckCommand, expectedCheck)
 		}
+
+		// Verify interactive flag is set appropriately
+		if platform == actions.PlatformArch || platform == actions.PlatformDebian {
+			if !cmd.Interactive {
+				t.Errorf("Platform %s should have interactive=true for package manager commands", platform)
+			}
+		} else {
+			if cmd.Interactive {
+				t.Errorf("Platform %s should have interactive=false for non-package manager commands", platform)
+			}
+		}
 	}
 }
 
@@ -204,6 +225,10 @@ func TestNewInstallDockerAction_MultipleCalls(t *testing.T) {
 
 		if cmd1.CheckCommand != cmd2.CheckCommand {
 			t.Errorf("Platform %s check commands differ: '%s' vs '%s'", platform, cmd1.CheckCommand, cmd2.CheckCommand)
+		}
+
+		if cmd1.Interactive != cmd2.Interactive {
+			t.Errorf("Platform %s interactive flags differ: %t vs %t", platform, cmd1.Interactive, cmd2.Interactive)
 		}
 	}
 }

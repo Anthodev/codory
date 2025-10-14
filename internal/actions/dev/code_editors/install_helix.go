@@ -2,34 +2,34 @@ package dev
 
 import "anthodev/codory/internal/actions"
 
-func InstallDockerComposeAction() *actions.Action {
+func InstallHelix() *actions.Action {
 	return &actions.Action{
-		ID:          "install_docker_compose",
-		Name:        "Install Docker Compose",
-		Description: "Install docker compose on the system",
+		ID:          "install_helix",
+		Name:        "Install Helix Editor",
+		Description: "Install Helix Editor on your system",
 		Type:        actions.ActionTypeCommand,
 		PlatformCommands: map[actions.Platform]actions.PlatformCommand{
 			actions.PlatformArch: {
-				Command:       "sudo pacman -S docker-compose",
+				Command:       "sudo pacman -S helix",
 				PackageSource: actions.PackageSourceOfficial,
-				CheckCommand:  "docker compose version",
+				CheckCommand:  "hx",
 				Interactive:   true,
 			},
 			actions.PlatformDebian: {
-				Command:       "sudo apt install docker-compose",
+				Command:       "sudo add-apt-repository ppa:maveonair/helix-editor && sudo apt-get update && sudo apt install helix",
 				PackageSource: actions.PackageSourceOfficial,
-				CheckCommand:  "docker compose version",
+				CheckCommand:  "hx",
 				Interactive:   true,
 			},
 			actions.PlatformLinux: {
-				Command:       "brew install docker-compose",
+				Command:       "brew install helix",
 				PackageSource: actions.PackageSourceBrew,
-				CheckCommand:  "docker compose version",
+				CheckCommand:  "hx",
 			},
 			actions.PlatformMacOS: {
-				Command:       "brew install docker-compose",
+				Command:       "brew install helix",
 				PackageSource: actions.PackageSourceBrew,
-				CheckCommand:  "docker compose version",
+				CheckCommand:  "hx",
 			},
 		},
 	}

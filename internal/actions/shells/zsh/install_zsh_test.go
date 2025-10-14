@@ -38,39 +38,44 @@ func TestInstallZshAction_PlatformCommands(t *testing.T) {
 	action := NewInstallZshAction()
 
 	tests := []struct {
-		name            string
-		platform        actions.Platform
-		expectedCommand string
-		expectedSource  actions.PackageSource
-		expectedCheck   string
+		name                string
+		platform            actions.Platform
+		expectedCommand     string
+		expectedSource      actions.PackageSource
+		expectedCheck       string
+		expectedInteractive bool
 	}{
 		{
-			name:            "Debian platform",
-			platform:        actions.PlatformDebian,
-			expectedCommand: "sudo apt-get update && sudo apt-get install -y zsh",
-			expectedSource:  actions.PackageSourceOfficial,
-			expectedCheck:   "zsh",
+			name:                "Debian platform",
+			platform:            actions.PlatformDebian,
+			expectedCommand:     "sudo apt-get update && sudo apt-get install -y zsh",
+			expectedSource:      actions.PackageSourceOfficial,
+			expectedCheck:       "zsh",
+			expectedInteractive: true,
 		},
 		{
-			name:            "Arch platform",
-			platform:        actions.PlatformArch,
-			expectedCommand: "sudo pacman -S --noconfirm zsh",
-			expectedSource:  actions.PackageSourceOfficial,
-			expectedCheck:   "zsh",
+			name:                "Arch platform",
+			platform:            actions.PlatformArch,
+			expectedCommand:     "sudo pacman -S --noconfirm zsh",
+			expectedSource:      actions.PackageSourceOfficial,
+			expectedCheck:       "zsh",
+			expectedInteractive: true,
 		},
 		{
-			name:            "macOS platform",
-			platform:        actions.PlatformMacOS,
-			expectedCommand: "brew install zsh",
-			expectedSource:  actions.PackageSourceBrew,
-			expectedCheck:   "zsh",
+			name:                "macOS platform",
+			platform:            actions.PlatformMacOS,
+			expectedCommand:     "brew install zsh",
+			expectedSource:      actions.PackageSourceBrew,
+			expectedCheck:       "zsh",
+			expectedInteractive: false,
 		},
 		{
-			name:            "Linux platform",
-			platform:        actions.PlatformLinux,
-			expectedCommand: "brew install zsh",
-			expectedSource:  actions.PackageSourceBrew,
-			expectedCheck:   "zsh",
+			name:                "Linux platform",
+			platform:            actions.PlatformLinux,
+			expectedCommand:     "brew install zsh",
+			expectedSource:      actions.PackageSourceBrew,
+			expectedCheck:       "zsh",
+			expectedInteractive: false,
 		},
 	}
 
@@ -91,6 +96,10 @@ func TestInstallZshAction_PlatformCommands(t *testing.T) {
 
 			if cmd.CheckCommand != tt.expectedCheck {
 				t.Errorf("Expected check command for %s to be '%s', got '%s'", tt.platform, tt.expectedCheck, cmd.CheckCommand)
+			}
+
+			if cmd.Interactive != tt.expectedInteractive {
+				t.Errorf("Expected interactive for %s to be %t, got %t", tt.platform, tt.expectedInteractive, cmd.Interactive)
 			}
 		})
 	}
@@ -135,6 +144,17 @@ func TestInstallZshAction_ActionConsistency(t *testing.T) {
 		// Verify that check command is consistent across platforms
 		if cmd.CheckCommand != "zsh" {
 			t.Errorf("Platform %s has unexpected check command '%s', expected 'zsh'", platform, cmd.CheckCommand)
+		}
+
+		// Verify interactive flag is set appropriately
+		if platform == actions.PlatformDebian || platform == actions.PlatformArch {
+			if !cmd.Interactive {
+				t.Errorf("Platform %s should have interactive=true for package manager commands", platform)
+			}
+		} else {
+			if cmd.Interactive {
+				t.Errorf("Platform %s should have interactive=false for brew commands", platform)
+			}
 		}
 	}
 }
@@ -183,6 +203,10 @@ func TestInstallZshAction_MultipleCalls(t *testing.T) {
 		if cmd1.CheckCommand != cmd2.CheckCommand {
 			t.Errorf("Platform %s check commands differ: '%s' vs '%s'", platform, cmd1.CheckCommand, cmd2.CheckCommand)
 		}
+
+		if cmd1.Interactive != cmd2.Interactive {
+			t.Errorf("Platform %s interactive flags differ: %t vs %t", platform, cmd1.Interactive, cmd2.Interactive)
+		}
 	}
 }
 
@@ -205,6 +229,10 @@ func TestInstallZshAction_LinuxPlatform(t *testing.T) {
 
 	if linuxCmd.CheckCommand != "zsh" {
 		t.Errorf("Expected Linux check command to be 'zsh', got '%s'", linuxCmd.CheckCommand)
+	}
+
+	if linuxCmd.Interactive {
+		t.Error("Expected Linux interactive to be false for brew install")
 	}
 }
 
