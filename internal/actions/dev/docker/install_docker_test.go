@@ -87,7 +87,7 @@ func TestNewInstallDockerAction_PlatformCommands(t *testing.T) {
 		{
 			name:                "Windows platform",
 			platform:            actions.PlatformWindows,
-			expectedCommand:     "winget install Docker.DockerDesktop",
+			expectedCommand:     "winget install -e --id Docker.DockerDesktop",
 			expectedSource:      actions.PackageSourceWinget,
 			expectedCheck:       "docker",
 			expectedInteractive: false,
@@ -375,7 +375,7 @@ func TestNewInstallDockerAction_WindowsCommandStructure(t *testing.T) {
 		t.Fatal("Expected Windows platform command to exist")
 	}
 
-	expectedCommand := "winget install Docker.DockerDesktop"
+	expectedCommand := "winget install -e --id Docker.DockerDesktop"
 	if cmd.Command != expectedCommand {
 		t.Errorf("Expected Windows command to be '%s', got '%s'", expectedCommand, cmd.Command)
 	}
