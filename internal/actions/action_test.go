@@ -296,6 +296,28 @@ func TestAction_GetPlatformCommand(t *testing.T) {
 			want:     PlatformCommand{Command: "", PackageSource: "", CheckCommand: ""},
 			want1:    false,
 		},
+		{
+			name: "interactive command",
+			action: Action{
+				PlatformCommands: map[Platform]PlatformCommand{
+					PlatformLinux: {Command: "sudo pacman -S helix", CheckCommand: "hx", Interactive: true},
+				},
+			},
+			platform: PlatformLinux,
+			want:     PlatformCommand{Command: "sudo pacman -S helix", CheckCommand: "hx", Interactive: true},
+			want1:    true,
+		},
+		{
+			name: "non-interactive command (default)",
+			action: Action{
+				PlatformCommands: map[Platform]PlatformCommand{
+					PlatformLinux: {Command: "echo test", CheckCommand: "which echo", Interactive: false},
+				},
+			},
+			platform: PlatformLinux,
+			want:     PlatformCommand{Command: "echo test", CheckCommand: "which echo", Interactive: false},
+			want1:    true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -639,4 +661,49 @@ func TestAction_EdgeCases(t *testing.T) {
 			t.Errorf("Action.GetPlatformCommand() with nil PlatformCommands got = %v, want %v", got, PlatformCommand{Command: "", PackageSource: "", CheckCommand: ""})
 		}
 	})
+}
+
+func TestPlatformCommand_Interactive(t *testing.T) {
+	tests := []struct {
+		name    string
+		command PlatformCommand
+		want    bool
+	}{
+		{
+			name: "interactive command",
+			command: PlatformCommand{
+				Command:       "sudo pacman -S helix",
+				CheckCommand:  "hx",
+				Interactive:   true,
+				PackageSource: PackageSourceOfficial,
+			},
+			want: true,
+		},
+		{
+			name: "non-interactive command",
+			command: PlatformCommand{
+				Command:       "echo test",
+				CheckCommand:  "which echo",
+				Interactive:   false,
+				PackageSource: PackageSourceOfficial,
+			},
+			want: false,
+		},
+		{
+			name: "command with no interactive flag set (defaults to false)",
+			command: PlatformCommand{
+				Command:      "curl -fsSL https://example.com",
+				CheckCommand: "which curl",
+			},
+			want: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.command.Interactive; got != tt.want {
+				t.Errorf("PlatformCommand.Interactive = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
