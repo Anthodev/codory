@@ -37,4 +37,5 @@ func init() {
 	registry.RegisterAction("code_editor", InstallHelix())
 	registry.RegisterAction("code_editor", InstallZed())
 	registry.RegisterAction("code_editor", InstallVsCode())
+	registry.RegisterAction("code_editor", InstallJetBrainsToolbox())
 }

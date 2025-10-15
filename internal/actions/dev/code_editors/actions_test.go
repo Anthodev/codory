@@ -33,8 +33,8 @@ func TestInit(t *testing.T) {
 	}
 
 	// Check if the expected actions are registered
-	if len(codeEditorCategory.Actions) != 5 {
-		t.Fatalf("Expected 5 actions in code_editor category, got %d", len(codeEditorCategory.Actions))
+	if len(codeEditorCategory.Actions) != 6 {
+		t.Fatalf("Expected 6 actions in code_editor category, got %d", len(codeEditorCategory.Actions))
 	}
 
 	// Verify all actions are present
@@ -43,6 +43,7 @@ func TestInit(t *testing.T) {
 	var installHelixAction *actions.Action
 	var installZedAction *actions.Action
 	var installVsCodeAction *actions.Action
+	var installJetBrainsToolboxAction *actions.Action
 	for _, action := range codeEditorCategory.Actions {
 		if action.ID == "install_neovim" {
 			installNeovimAction = action
@@ -54,6 +55,8 @@ func TestInit(t *testing.T) {
 			installZedAction = action
 		} else if action.ID == "install_vscode" {
 			installVsCodeAction = action
+		} else if action.ID == "install_jetbrains_toolbox" {
+			installJetBrainsToolboxAction = action
 		}
 	}
 
@@ -75,6 +78,10 @@ func TestInit(t *testing.T) {
 
 	if installVsCodeAction == nil {
 		t.Error("install_vscode action not found in code_editor category")
+	}
+
+	if installJetBrainsToolboxAction == nil {
+		t.Error("install_jetbrains_toolbox action not found in code_editor category")
 	}
 
 	if installNeovimAction.Name != "Install Neovim" {
@@ -253,6 +260,10 @@ func TestCodeEditorCategoryActionsHaveCorrectTypes(t *testing.T) {
 			if action.Type != actions.ActionTypeCommand {
 				t.Errorf("Action %s should be of type Command, got %s", action.ID, action.Type)
 			}
+		case "install_jetbrains_toolbox":
+			if action.Type != actions.ActionTypeCommand {
+				t.Errorf("Action %s should be of type Command, got %s", action.ID, action.Type)
+			}
 		default:
 			t.Errorf("Unknown action %s with type %s", action.ID, action.Type)
 		}
@@ -282,18 +293,21 @@ func TestCodeEditorCategoryRegistrationVerification(t *testing.T) {
 	}
 
 	// Verify code_editor category has the expected actions
-	if len(codeEditorCategory.Actions) != 5 {
-		t.Fatalf("Expected 5 actions in code_editor category, got %d", len(codeEditorCategory.Actions))
+	if len(codeEditorCategory.Actions) != 6 {
+		t.Fatalf("Expected 6 actions in code_editor category, got %d", len(codeEditorCategory.Actions))
 	}
 
-	// Verify both actions are present
+	// Verify all expected actions are present
 	var installNeovimAction *actions.Action
 	var installLazyVimAction *actions.Action
+	var installJetBrainsToolboxAction *actions.Action
 	for _, action := range codeEditorCategory.Actions {
 		if action.ID == "install_neovim" {
 			installNeovimAction = action
 		} else if action.ID == "install_lazyvim" {
 			installLazyVimAction = action
+		} else if action.ID == "install_jetbrains_toolbox" {
+			installJetBrainsToolboxAction = action
 		}
 	}
 
@@ -303,6 +317,10 @@ func TestCodeEditorCategoryRegistrationVerification(t *testing.T) {
 
 	if installLazyVimAction == nil {
 		t.Error("install_lazyvim action not found in code_editor category")
+	}
+
+	if installJetBrainsToolboxAction == nil {
+		t.Error("install_jetbrains_toolbox action not found in code_editor category")
 	}
 
 	// Verify code_editor category is visible on all platforms
