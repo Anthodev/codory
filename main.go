@@ -13,6 +13,7 @@ import (
 	_ "anthodev/codory/internal/actions/shells"
 	_ "anthodev/codory/internal/actions/shells/zsh"
 	_ "anthodev/codory/internal/actions/shells/zsh/plugins"
+	_ "anthodev/codory/internal/actions/terminal"
 	"anthodev/codory/internal/ui"
 )
 
