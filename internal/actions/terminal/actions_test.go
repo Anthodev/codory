@@ -24,21 +24,21 @@ func TestInit(t *testing.T) {
 	testutil.AssertStringEquals(t, terminalCategory.Name, "Terminal", "Category Name")
 	testutil.AssertStringEquals(t, terminalCategory.Description, "Terminals you can install on your system", "Category Description")
 
-	// Verify terminal category has the InstallGhostty, InstallKitty, InstallRio, and InstallWarpTerminal actions registered
-	if len(terminalCategory.Actions) != 4 {
-		t.Errorf("Expected terminal category to have 4 actions (InstallGhostty, InstallKitty, InstallRio, and InstallWarpTerminal), got %d", len(terminalCategory.Actions))
+	// Verify terminal category has the InstallGhostty, InstallKitty, InstallRio, InstallWarpTerminal, and InstallTmux actions registered
+	if len(terminalCategory.Actions) != 5 {
+		t.Errorf("Expected terminal category to have 5 actions (InstallGhostty, InstallKitty, InstallRio, InstallWarpTerminal, InstallTmux), got %d", len(terminalCategory.Actions))
 	}
 
-	if len(terminalCategory.Actions) > 0 {
-		testutil.AssertStringEquals(t, terminalCategory.Actions[0].ID, "install_ghostty", "First action ID")
+	// Validate presence of each expected action by ID (order may vary, so we check existence)
+	expectedIDs := []string{"install_ghostty", "install_kitty", "install_rio", "install_warp_terminal", "install_tmux"}
+	found := make(map[string]bool)
+	for _, a := range terminalCategory.Actions {
+		found[a.ID] = true
 	}
-
-	if len(terminalCategory.Actions) > 1 {
-		testutil.AssertStringEquals(t, terminalCategory.Actions[1].ID, "install_kitty", "Second action ID")
-	}
-
-	if len(terminalCategory.Actions) > 2 {
-		testutil.AssertStringEquals(t, terminalCategory.Actions[2].ID, "install_rio", "Third action ID")
+	for _, id := range expectedIDs {
+		if !found[id] {
+			t.Errorf("Expected action ID %s to be registered in terminal category", id)
+		}
 	}
 
 	if len(terminalCategory.SubCategories) != 0 {

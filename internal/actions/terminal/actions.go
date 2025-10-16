@@ -21,4 +21,5 @@ func init() {
 	registry.RegisterAction("terminal", InstallKitty())
 	registry.RegisterAction("terminal", InstallRio())
 	registry.RegisterAction("terminal", InstallWarpTerminal())
+	registry.RegisterAction("terminal", InstallTmux())
 }
