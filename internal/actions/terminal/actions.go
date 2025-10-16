@@ -23,4 +23,5 @@ func init() {
 	registry.RegisterAction("terminal", InstallWarpTerminal())
 	registry.RegisterAction("terminal", InstallTmux())
 	registry.RegisterAction("terminal", InstallZellij())
+	registry.RegisterAction("terminal", InstallWezterm())
 }
