@@ -18,4 +18,5 @@ func init() {
 
 	// Register actions
 	registry.RegisterAction("terminal", InstallGhostty())
+	registry.RegisterAction("terminal", InstallKitty())
 }
