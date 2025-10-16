@@ -24,9 +24,9 @@ func TestInit(t *testing.T) {
 	testutil.AssertStringEquals(t, terminalCategory.Name, "Terminal", "Category Name")
 	testutil.AssertStringEquals(t, terminalCategory.Description, "Terminals you can install on your system", "Category Description")
 
-	// Verify terminal category has the InstallGhostty, InstallKitty, and InstallRio actions registered
-	if len(terminalCategory.Actions) != 3 {
-		t.Errorf("Expected terminal category to have 3 actions (InstallGhostty, InstallKitty, and InstallRio), got %d", len(terminalCategory.Actions))
+	// Verify terminal category has the InstallGhostty, InstallKitty, InstallRio, and InstallWarpTerminal actions registered
+	if len(terminalCategory.Actions) != 4 {
+		t.Errorf("Expected terminal category to have 4 actions (InstallGhostty, InstallKitty, InstallRio, and InstallWarpTerminal), got %d", len(terminalCategory.Actions))
 	}
 
 	if len(terminalCategory.Actions) > 0 {
