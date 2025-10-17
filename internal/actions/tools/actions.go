@@ -16,4 +16,5 @@ func init() {
 
 	// Register actions
 	registry.RegisterAction("tools", InstallBat())
+	registry.RegisterAction("tools", InstallBtop())
 }
