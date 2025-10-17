@@ -2,7 +2,7 @@ package dev
 
 import "anthodev/codory/internal/actions"
 
-func InstallLazygit() *actions.Action {
+func InstallLazygitAction() *actions.Action {
 	return &actions.Action{
 		ID:          "install_lazygit",
 		Name:        "Install Lazygit",
