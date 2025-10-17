@@ -20,6 +20,7 @@ func init() {
 	registry.RegisterAction("dev", NewUUIDv7Action())
 	registry.RegisterAction("dev", DecodeUUIDv7Action())
 	registry.RegisterAction("dev", NewSymfonySecretAction())
-	registry.RegisterAction("dev", InstallLazygit())
+	registry.RegisterAction("dev", InstallLazygitAction())
 	registry.RegisterAction("dev", InstallGitmojiAction())
+	registry.RegisterAction("dev", InstallJujutsuAction())
 }

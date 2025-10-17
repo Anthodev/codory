@@ -12,7 +12,7 @@ import (
 // TestInstallLazygit tests the creation of the Install Lazygit action
 // This test verifies the action configuration without executing any actual commands
 func TestInstallLazygit(t *testing.T) {
-	action := InstallLazygit()
+	action := InstallLazygitAction()
 
 	if action == nil {
 		t.Fatal("InstallLazygit() returned nil")
@@ -42,7 +42,7 @@ func TestInstallLazygit(t *testing.T) {
 // TestInstallLazygit_PlatformCommands tests that platform commands are correctly configured
 // This test only verifies the command strings without executing them
 func TestInstallLazygit_PlatformCommands(t *testing.T) {
-	action := InstallLazygit()
+	action := InstallLazygitAction()
 
 	tests := []struct {
 		name            string
@@ -99,7 +99,7 @@ func TestInstallLazygit_PlatformCommands(t *testing.T) {
 // TestInstallLazygit_UnsupportedPlatforms verifies that unsupported platforms don't have commands
 // This prevents accidental execution on unsupported systems
 func TestInstallLazygit_UnsupportedPlatforms(t *testing.T) {
-	action := InstallLazygit()
+	action := InstallLazygitAction()
 
 	// Test that unsupported platforms don't have commands
 	unsupportedPlatforms := []actions.Platform{
@@ -123,7 +123,7 @@ func TestInstallLazygit_UnsupportedPlatforms(t *testing.T) {
 // TestInstallLazygit_ActionConsistency verifies that all platform commands have consistent structure
 // This ensures the action is properly configured for safe execution
 func TestInstallLazygit_ActionConsistency(t *testing.T) {
-	action := InstallLazygit()
+	action := InstallLazygitAction()
 
 	// Verify that all platform commands have consistent structure
 	for platform, cmd := range action.PlatformCommands {
@@ -151,8 +151,8 @@ func TestInstallLazygit_ActionConsistency(t *testing.T) {
 // This ensures the factory function is deterministic and safe
 func TestInstallLazygit_MultipleCalls(t *testing.T) {
 	// Test that multiple calls to InstallLazygit return equivalent actions
-	action1 := InstallLazygit()
-	action2 := InstallLazygit()
+	action1 := InstallLazygitAction()
+	action2 := InstallLazygitAction()
 
 	if action1.ID != action2.ID {
 		t.Errorf("Expected action IDs to be consistent, got '%s' and '%s'", action1.ID, action2.ID)
@@ -199,7 +199,7 @@ func TestInstallLazygit_MultipleCalls(t *testing.T) {
 // TestInstallLazygit_ExpectedPlatforms verifies that only expected platforms are configured
 // This prevents accidental execution on unexpected platforms
 func TestInstallLazygit_ExpectedPlatforms(t *testing.T) {
-	action := InstallLazygit()
+	action := InstallLazygitAction()
 
 	expectedPlatforms := []actions.Platform{
 		actions.PlatformLinux,
@@ -224,7 +224,7 @@ func TestInstallLazygit_ExpectedPlatforms(t *testing.T) {
 
 // TestInstallLazygit_LinuxCommandStructure tests that the Linux command uses brew
 func TestInstallLazygit_LinuxCommandStructure(t *testing.T) {
-	action := InstallLazygit()
+	action := InstallLazygitAction()
 
 	cmd, exists := action.PlatformCommands[actions.PlatformLinux]
 	if !exists {
@@ -249,7 +249,7 @@ func TestInstallLazygit_LinuxCommandStructure(t *testing.T) {
 
 // TestInstallLazygit_MacOSCommandStructure tests that the macOS command uses brew
 func TestInstallLazygit_MacOSCommandStructure(t *testing.T) {
-	action := InstallLazygit()
+	action := InstallLazygitAction()
 
 	cmd, exists := action.PlatformCommands[actions.PlatformMacOS]
 	if !exists {
@@ -274,7 +274,7 @@ func TestInstallLazygit_MacOSCommandStructure(t *testing.T) {
 
 // TestInstallLazygit_WindowsCommandStructure tests that the Windows command uses winget
 func TestInstallLazygit_WindowsCommandStructure(t *testing.T) {
-	action := InstallLazygit()
+	action := InstallLazygitAction()
 
 	cmd, exists := action.PlatformCommands[actions.PlatformWindows]
 	if !exists {
@@ -299,7 +299,7 @@ func TestInstallLazygit_WindowsCommandStructure(t *testing.T) {
 
 // TestInstallLazygit_CheckCommandStructure tests that the check command properly checks for lazygit
 func TestInstallLazygit_CheckCommandStructure(t *testing.T) {
-	action := InstallLazygit()
+	action := InstallLazygitAction()
 
 	// Test that the check command properly checks for lazygit
 	expectedCheck := "lazygit"
@@ -319,7 +319,7 @@ func TestInstallLazygit_CheckCommandStructure(t *testing.T) {
 // TestInstallLazygit_NoCommandExecution ensures that the test never executes actual commands
 // This is a safety test to verify that we're only testing configuration, not execution
 func TestInstallLazygit_NoCommandExecution(t *testing.T) {
-	action := InstallLazygit()
+	action := InstallLazygitAction()
 
 	// Verify that the action is configured as a command type (not function)
 	if action.Type != actions.ActionTypeCommand {
@@ -340,7 +340,7 @@ func TestInstallLazygit_NoCommandExecution(t *testing.T) {
 // TestInstallLazygit_SafeForCI verifies that the action is safe to use in CI environments
 // This test ensures no actual system commands will be executed during testing
 func TestInstallLazygit_SafeForCI(t *testing.T) {
-	action := InstallLazygit()
+	action := InstallLazygitAction()
 
 	// Verify the action has proper check commands to prevent unnecessary execution
 	for platform, cmd := range action.PlatformCommands {
@@ -358,7 +358,7 @@ func TestInstallLazygit_SafeForCI(t *testing.T) {
 // TestInstallLazygit_MockExecutorBehavior tests that the action can be safely used with a mock executor
 // This demonstrates how to properly mock the action execution without running actual commands
 func TestInstallLazygit_MockExecutorBehavior(t *testing.T) {
-	action := InstallLazygit()
+	action := InstallLazygitAction()
 
 	// Create a mock executor that doesn't execute real commands
 	mockExecutor := testutil.NewMockExecutor(func(action *actions.Action) (string, error) {
@@ -384,7 +384,7 @@ func TestInstallLazygit_MockExecutorBehavior(t *testing.T) {
 
 // TestInstallLazygit_BrewConsistency tests that Linux and macOS both use brew consistently
 func TestInstallLazygit_BrewConsistency(t *testing.T) {
-	action := InstallLazygit()
+	action := InstallLazygitAction()
 
 	linuxCmd, linuxExists := action.PlatformCommands[actions.PlatformLinux]
 	macOSCmd, macOSExists := action.PlatformCommands[actions.PlatformMacOS]
@@ -414,7 +414,7 @@ func TestInstallLazygit_BrewConsistency(t *testing.T) {
 
 // TestInstallLazygit_PackageSourceValidation tests that package sources are appropriate for each platform
 func TestInstallLazygit_PackageSourceValidation(t *testing.T) {
-	action := InstallLazygit()
+	action := InstallLazygitAction()
 
 	// Linux and macOS should use brew
 	for _, platform := range []actions.Platform{actions.PlatformLinux, actions.PlatformMacOS} {
