@@ -24,9 +24,9 @@ func TestInit(t *testing.T) {
 	testutil.AssertStringEquals(t, toolsCategory.Name, "Tools", "Category Name")
 	testutil.AssertStringEquals(t, toolsCategory.Description, "Useful tools that you can add to your system", "Category Description")
 
-	// Verify tools category has the InstallBat action registered
-	if len(toolsCategory.Actions) != 1 {
-		t.Errorf("Expected tools category to have 1 action (InstallBat), got %d", len(toolsCategory.Actions))
+	// Verify tools category has the correct number of actions registered
+	if len(toolsCategory.Actions) != 2 {
+		t.Errorf("Expected tools category to have 2 actions (InstallBat and InstallBtop), got %d", len(toolsCategory.Actions))
 	}
 
 	// Validate presence of InstallBat action by ID
@@ -39,6 +39,18 @@ func TestInit(t *testing.T) {
 	}
 	if !foundInstallBat {
 		t.Error("Expected action ID 'install_bat' to be registered in tools category")
+	}
+
+	// Validate presence of InstallBtop action by ID
+	foundInstallBtop := false
+	for _, a := range toolsCategory.Actions {
+		if a.ID == "install_btop" {
+			foundInstallBtop = true
+			break
+		}
+	}
+	if !foundInstallBtop {
+		t.Error("Expected action ID 'install_btop' to be registered in tools category")
 	}
 
 	if len(toolsCategory.SubCategories) != 0 {
@@ -99,12 +111,17 @@ func TestToolsCategoryActions(t *testing.T) {
 		t.Fatal("Tools category not found")
 	}
 
-	// Verify that the InstallBat action is properly registered
+	// Verify that the tools category has actions registered
 	if len(toolsCategory.Actions) == 0 {
 		t.Fatal("Expected tools category to have at least one action")
 	}
 
-	// Find the InstallBat action
+	// Verify expected action count
+	if len(toolsCategory.Actions) != 2 {
+		t.Fatalf("Expected 2 actions in tools category, got %d", len(toolsCategory.Actions))
+	}
+
+	// Find and verify the InstallBat action
 	var installBatAction *actions.Action
 	for _, action := range toolsCategory.Actions {
 		if action.ID == "install_bat" {
@@ -117,16 +134,39 @@ func TestToolsCategoryActions(t *testing.T) {
 		t.Fatal("InstallBat action not found in tools category")
 	}
 
-	// Verify InstallBat action properties
-	testutil.AssertStringEquals(t, installBatAction.Name, "Install bat", "Action Name")
-	testutil.AssertStringEquals(t, installBatAction.Description, "Install the bat content viewer tool", "Action Description")
+	testutil.AssertStringEquals(t, installBatAction.Name, "Install bat", "InstallBat Action Name")
+	testutil.AssertStringEquals(t, installBatAction.Description, "Install the bat content viewer tool", "InstallBat Action Description")
 
 	if installBatAction.Type != actions.ActionTypeCommand {
-		t.Errorf("Expected action type '%s', got '%s'", actions.ActionTypeCommand, installBatAction.Type)
+		t.Errorf("Expected InstallBat action type '%s', got '%s'", actions.ActionTypeCommand, installBatAction.Type)
 	}
 
 	if installBatAction.PlatformCommands == nil {
 		t.Error("Expected PlatformCommands to be set on InstallBat action")
+	}
+
+	// Find and verify the InstallBtop action
+	var installBtopAction *actions.Action
+	for _, action := range toolsCategory.Actions {
+		if action.ID == "install_btop" {
+			installBtopAction = action
+			break
+		}
+	}
+
+	if installBtopAction == nil {
+		t.Fatal("InstallBtop action not found in tools category")
+	}
+
+	testutil.AssertStringEquals(t, installBtopAction.Name, "Install btop", "InstallBtop Action Name")
+	testutil.AssertStringEquals(t, installBtopAction.Description, "Install btop system monitor", "InstallBtop Action Description")
+
+	if installBtopAction.Type != actions.ActionTypeCommand {
+		t.Errorf("Expected InstallBtop action type '%s', got '%s'", actions.ActionTypeCommand, installBtopAction.Type)
+	}
+
+	if installBtopAction.PlatformCommands == nil {
+		t.Error("Expected PlatformCommands to be set on InstallBtop action")
 	}
 }
 
@@ -166,7 +206,48 @@ func TestInstallBatActionPlatformCommands(t *testing.T) {
 
 	for _, platform := range expectedPlatforms {
 		if _, exists := installBatAction.PlatformCommands[platform]; !exists {
-			t.Errorf("Expected platform command for %s not found", platform)
+			t.Errorf("Expected platform command for %s not found in InstallBat", platform)
+		}
+	}
+}
+
+func TestInstallBtopActionPlatformCommands(t *testing.T) {
+	globalRegistry := actions.GlobalRegistry()
+
+	toolsCategory, exists := globalRegistry.GetCategory("tools")
+	if !exists {
+		t.Fatal("Tools category not found")
+	}
+
+	// Find the InstallBtop action
+	var installBtopAction *actions.Action
+	for _, action := range toolsCategory.Actions {
+		if action.ID == "install_btop" {
+			installBtopAction = action
+			break
+		}
+	}
+
+	if installBtopAction == nil {
+		t.Fatal("InstallBtop action not found in tools category")
+	}
+
+	// Verify that platform commands are configured
+	if len(installBtopAction.PlatformCommands) == 0 {
+		t.Error("Expected InstallBtop action to have platform commands configured")
+	}
+
+	// Verify expected platforms are configured
+	expectedPlatforms := []actions.Platform{
+		actions.PlatformArch,
+		actions.PlatformDebian,
+		actions.PlatformLinux,
+		actions.PlatformMacOS,
+	}
+
+	for _, platform := range expectedPlatforms {
+		if _, exists := installBtopAction.PlatformCommands[platform]; !exists {
+			t.Errorf("Expected platform command for %s not found in InstallBtop", platform)
 		}
 	}
 }
@@ -196,6 +277,56 @@ func TestToolsCategoryRegistration(t *testing.T) {
 
 	if !toolsFound {
 		t.Error("Tools category not found in root subcategories")
+	}
+}
+
+func TestAllActionsRegistered(t *testing.T) {
+	globalRegistry := actions.GlobalRegistry()
+
+	toolsCategory, exists := globalRegistry.GetCategory("tools")
+	if !exists {
+		t.Fatal("Tools category not found")
+	}
+
+	// Map to track which actions we find
+	registeredActions := make(map[string]*actions.Action)
+	for _, action := range toolsCategory.Actions {
+		registeredActions[action.ID] = action
+	}
+
+	// Expected actions in the tools category
+	expectedActions := []struct {
+		id   string
+		name string
+	}{
+		{id: "install_bat", name: "Install bat"},
+		{id: "install_btop", name: "Install btop"},
+	}
+
+	// Verify all expected actions are registered
+	for _, expected := range expectedActions {
+		action, found := registeredActions[expected.id]
+		if !found {
+			t.Errorf("Expected action '%s' not found in tools category", expected.id)
+			continue
+		}
+
+		if action.Name != expected.name {
+			t.Errorf("Action '%s' has incorrect name. Expected '%s', got '%s'", expected.id, expected.name, action.Name)
+		}
+
+		if action.Type != actions.ActionTypeCommand {
+			t.Errorf("Action '%s' has incorrect type. Expected '%s', got '%s'", expected.id, actions.ActionTypeCommand, action.Type)
+		}
+
+		if action.PlatformCommands == nil {
+			t.Errorf("Action '%s' has no platform commands configured", expected.id)
+		}
+	}
+
+	// Verify no extra actions are registered
+	if len(registeredActions) != len(expectedActions) {
+		t.Errorf("Expected %d actions in tools category, but found %d", len(expectedActions), len(registeredActions))
 	}
 }
 
