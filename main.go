@@ -6,6 +6,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
+	_ "anthodev/codory/internal/actions/ai"
 	_ "anthodev/codory/internal/actions/dev"
 	_ "anthodev/codory/internal/actions/dev/code_editors"
 	_ "anthodev/codory/internal/actions/dev/docker"
