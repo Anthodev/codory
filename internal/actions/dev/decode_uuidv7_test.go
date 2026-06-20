@@ -123,6 +123,16 @@ func TestDecodeUUIDv7_InvalidUUID(t *testing.T) {
 			uuid:     "not-a-uuid-at-all",
 			expected: "invalid UUIDv7",
 		},
+		{
+			name:     "UUID is not version 7",
+			uuid:     "01944bf0-7c2d-4cc4-ba43-7b6f2f4a7c1d",
+			expected: "invalid UUIDv7",
+		},
+		{
+			name:     "UUID has non-RFC variant",
+			uuid:     "01944bf0-7c2d-7cc4-7a43-7b6f2f4a7c1d",
+			expected: "invalid UUIDv7",
+		},
 	}
 
 	for _, tc := range testCases {
@@ -140,17 +150,15 @@ func TestDecodeUUIDv7_InvalidUUID(t *testing.T) {
 }
 
 func TestDecodeUUIDv7_MissingArgument(t *testing.T) {
-	// Test with no arguments - this should panic, so we need to recover
-	defer func() {
-		if r := recover(); r == nil {
-			t.Error("Expected panic when no arguments provided, but function did not panic")
-		}
-	}()
-
 	ctx := context.WithValue(context.Background(), actions.ArgsContextKey, []string{})
 
-	// This should panic due to index out of range
-	_, _ = decodeUUIDv7(ctx)
+	_, err := decodeUUIDv7(ctx)
+	if err == nil {
+		t.Fatal("Expected error when no arguments provided, got nil")
+	}
+	if !utils.Contains(err.Error(), "invalid UUIDv7") {
+		t.Errorf("Expected invalid UUIDv7 error, got %v", err)
+	}
 }
 
 func TestUUID7stringToAtom(t *testing.T) {
@@ -190,6 +198,16 @@ func TestUUID7stringToAtom(t *testing.T) {
 		{
 			name:        "empty string",
 			uuid:        "",
+			shouldError: true,
+		},
+		{
+			name:        "wrong UUID version",
+			uuid:        "01944bf0-7c2d-4cc4-ba43-7b6f2f4a7c1d",
+			shouldError: true,
+		},
+		{
+			name:        "wrong UUID variant",
+			uuid:        "01944bf0-7c2d-7cc4-7a43-7b6f2f4a7c1d",
 			shouldError: true,
 		},
 	}

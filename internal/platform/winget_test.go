@@ -23,8 +23,6 @@ func TestNewWingetChecker(t *testing.T) {
 
 // TestWingetChecker_Check_WingetNotInstalled tests when winget is not installed
 func TestWingetChecker_Check_WingetNotInstalled(t *testing.T) {
-	t.Parallel()
-
 	// Mock IsWingetInstalled to return false
 	originalIsWingetInstalled := IsWingetInstalled
 	IsWingetInstalled = func() bool { return false }
@@ -48,8 +46,6 @@ func TestWingetChecker_Check_WingetNotInstalled(t *testing.T) {
 
 // TestWingetChecker_Check_WingetInstalledAndWorking tests when winget is installed and working
 func TestWingetChecker_Check_WingetInstalledAndWorking(t *testing.T) {
-	t.Parallel()
-
 	// Since we're in a Linux environment, winget won't be available
 	// We'll mock the behavior to simulate a Windows environment where winget is installed
 
@@ -83,8 +79,6 @@ func TestWingetChecker_Check_WingetInstalledAndWorking(t *testing.T) {
 
 // TestWingetChecker_Check_WingetInstalledButNotWorking tests error handling
 func TestWingetChecker_Check_WingetInstalledButNotWorking(t *testing.T) {
-	t.Parallel()
-
 	// Mock IsWingetInstalled to return true
 	originalIsWingetInstalled := IsWingetInstalled
 	IsWingetInstalled = func() bool { return true }
@@ -114,8 +108,6 @@ func TestWingetChecker_Check_WingetInstalledButNotWorking(t *testing.T) {
 
 // TestWingetChecker_Check_ContextCancellation tests that the function respects context cancellation
 func TestWingetChecker_Check_ContextCancellation(t *testing.T) {
-	t.Parallel()
-
 	// Mock IsWingetInstalled to return true
 	originalIsWingetInstalled := IsWingetInstalled
 	IsWingetInstalled = func() bool { return true }
@@ -165,8 +157,6 @@ func TestWingetChecker_InstallInstructions(t *testing.T) {
 
 // TestWingetChecker_Check_WithTimeout tests that the function works with a timeout context
 func TestWingetChecker_Check_WithTimeout(t *testing.T) {
-	t.Parallel()
-
 	// Mock IsWingetInstalled to return true
 	originalIsWingetInstalled := IsWingetInstalled
 	IsWingetInstalled = func() bool { return true }
@@ -195,8 +185,6 @@ func TestWingetChecker_Check_WithTimeout(t *testing.T) {
 
 // TestWingetChecker_Check_EdgeCases tests various edge cases
 func TestWingetChecker_Check_EdgeCases(t *testing.T) {
-	t.Parallel()
-
 	tests := []struct {
 		name                  string
 		mockIsWingetInstalled func() bool
@@ -279,8 +267,6 @@ func TestWingetChecker_InstallInstructions_Format(t *testing.T) {
 
 // TestWingetChecker_NilContext tests behavior with nil context
 func TestWingetChecker_NilContext(t *testing.T) {
-	t.Parallel()
-
 	// Mock IsWingetInstalled to return false to avoid actual command execution
 	originalIsWingetInstalled := IsWingetInstalled
 	IsWingetInstalled = func() bool { return false }
@@ -307,10 +293,14 @@ func TestWingetChecker_NilContext(t *testing.T) {
 
 // TestWingetChecker_ConcurrentAccess tests concurrent access to the checker
 func TestWingetChecker_ConcurrentAccess(t *testing.T) {
-	t.Parallel()
-
 	checker := NewWingetChecker()
 	ctx := context.Background()
+
+	originalIsWingetInstalled := IsWingetInstalled
+	IsWingetInstalled = func() bool { return false }
+	defer func() {
+		IsWingetInstalled = originalIsWingetInstalled
+	}()
 
 	// Run multiple goroutines concurrently
 	done := make(chan bool, 3)
@@ -323,13 +313,6 @@ func TestWingetChecker_ConcurrentAccess(t *testing.T) {
 					errorsChan <- errors.New("panic occurred")
 				}
 				done <- true
-			}()
-
-			// Mock IsWingetInstalled to return false to avoid actual command execution
-			originalIsWingetInstalled := IsWingetInstalled
-			IsWingetInstalled = func() bool { return false }
-			defer func() {
-				IsWingetInstalled = originalIsWingetInstalled
 			}()
 
 			err := checker.Check(ctx)

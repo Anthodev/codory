@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -37,6 +38,16 @@ func createTestPlatform(os platform.Platform) platform.Info {
 		OS:              os,
 		PackageManagers: []platform.PackageManager{},
 	}
+}
+
+type stubPackageManagerInstaller struct {
+	called bool
+	err    error
+}
+
+func (s *stubPackageManagerInstaller) Install(context.Context) error {
+	s.called = true
+	return s.err
 }
 
 // TestNewExecutor verifies executor creation
@@ -468,12 +479,36 @@ func TestExecutor_CheckPackageManagerDependency(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "brew package source",
+			name: "brew package source with brew installed",
 			executor: &Executor{
 				platformInfo: createTestPlatform(platform.MacOS),
 			},
 			source:  PackageSourceBrew,
 			wantErr: false,
+			skipFunc: func() bool {
+				return !platform.IsBrewInstalled()
+			},
+		},
+		{
+			name: "brew package source without brew",
+			executor: &Executor{
+				platformInfo: createTestPlatform(platform.MacOS),
+			},
+			source:      PackageSourceBrew,
+			wantErr:     true,
+			errContains: "brew is not installed",
+			skipFunc: func() bool {
+				return platform.IsBrewInstalled()
+			},
+		},
+		{
+			name: "winget package source on non-Windows",
+			executor: &Executor{
+				platformInfo: createTestPlatform(platform.Debian),
+			},
+			source:      PackageSourceWinget,
+			wantErr:     true,
+			errContains: "winget packages are only available on Windows",
 		},
 		{
 			name: "unknown package source",
@@ -584,6 +619,25 @@ func TestExecutor_NeedsPackageManagerInstallation(t *testing.T) {
 			wantSource: "",
 		},
 		{
+			name: "brew action without brew",
+			executor: &Executor{
+				platformInfo: createTestPlatform(platform.MacOS),
+			},
+			action: &Action{
+				PlatformCommands: map[Platform]PlatformCommand{
+					PlatformMacOS: {
+						Command:       "brew install package",
+						PackageSource: PackageSourceBrew,
+					},
+				},
+			},
+			wantNeeds:  true,
+			wantSource: PackageSourceBrew,
+			skipFunc: func() bool {
+				return platform.IsBrewInstalled()
+			},
+		},
+		{
 			name: "AUR action with PlatformLinux fallback for Arch",
 			executor: &Executor{
 				platformInfo: createTestPlatform(platform.Arch),
@@ -619,6 +673,117 @@ func TestExecutor_NeedsPackageManagerInstallation(t *testing.T) {
 				t.Errorf("NeedsPackageManagerInstallation() source = %v, want %v", source, tt.wantSource)
 			}
 		})
+	}
+}
+
+func TestExecutor_NeedsPackageManagerInstallation_SkipsWhenCheckCommandExists(t *testing.T) {
+	cleanup := setupTestEnvironment(t)
+	defer cleanup()
+	t.Setenv("PATH", t.TempDir())
+
+	executor := &Executor{platformInfo: createTestPlatform(platform.MacOS)}
+	action := &Action{
+		PlatformCommands: map[Platform]PlatformCommand{
+			PlatformMacOS: {
+				Command:       "brew install package",
+				PackageSource: PackageSourceBrew,
+				CheckCommand:  "already-installed",
+			},
+		},
+	}
+
+	needs, source := executor.NeedsPackageManagerInstallation(action)
+	if needs {
+		t.Fatalf("needs = true, want false; source = %s", source)
+	}
+	if source != "" {
+		t.Fatalf("source = %s, want empty", source)
+	}
+}
+
+func TestExecutor_NeedsPackageManagerInstallation_Winget(t *testing.T) {
+	cleanup := setupTestEnvironment(t)
+	defer cleanup()
+
+	originalIsWingetInstalled := platform.IsWingetInstalled
+	platform.IsWingetInstalled = func() bool { return false }
+	defer func() { platform.IsWingetInstalled = originalIsWingetInstalled }()
+
+	executor := &Executor{platformInfo: createTestPlatform(platform.Windows)}
+	action := &Action{
+		PlatformCommands: map[Platform]PlatformCommand{
+			PlatformWindows: {
+				Command:       "winget install package",
+				PackageSource: PackageSourceWinget,
+			},
+		},
+	}
+
+	needs, source := executor.NeedsPackageManagerInstallation(action)
+	if !needs {
+		t.Fatal("expected winget action to need package manager installation")
+	}
+	if source != PackageSourceWinget {
+		t.Fatalf("source = %s, want %s", source, PackageSourceWinget)
+	}
+}
+
+func TestExecutor_InstallPackageManager_WingetInstructions(t *testing.T) {
+	cleanup := setupTestEnvironment(t)
+	defer cleanup()
+
+	originalIsWingetInstalled := platform.IsWingetInstalled
+	platform.IsWingetInstalled = func() bool { return false }
+	defer func() { platform.IsWingetInstalled = originalIsWingetInstalled }()
+
+	executor := &Executor{platformInfo: createTestPlatform(platform.Windows)}
+	_, err := executor.InstallPackageManager(context.Background(), PackageSourceWinget)
+	if err == nil {
+		t.Fatal("expected manual winget instructions error")
+	}
+	if !strings.Contains(err.Error(), "Winget is not installed") {
+		t.Fatalf("expected winget instructions, got %v", err)
+	}
+}
+
+func TestExecutor_InstallPackageManager_BrewPrependsPathAfterInstall(t *testing.T) {
+	cleanup := setupTestEnvironment(t)
+	defer cleanup()
+
+	brewPath := platform.GetBrewPath()
+	if _, err := os.Stat(brewPath); err != nil {
+		t.Skipf("brew path %s unavailable: %v", brewPath, err)
+	}
+
+	oldPath := t.TempDir()
+	t.Setenv("PATH", oldPath)
+	if platform.IsBrewInstalled() {
+		t.Fatal("brew unexpectedly available before PATH update")
+	}
+
+	installer := &stubPackageManagerInstaller{}
+	executor := &Executor{
+		platformInfo:  createTestPlatform(platform.MacOS),
+		brewInstaller: installer,
+	}
+
+	got, err := executor.InstallPackageManager(context.Background(), PackageSourceBrew)
+	if err != nil {
+		t.Fatalf("InstallPackageManager() error = %v", err)
+	}
+	if got != "Homebrew has been successfully installed" {
+		t.Fatalf("InstallPackageManager() = %q", got)
+	}
+	if !installer.called {
+		t.Fatal("expected brew installer to be called")
+	}
+
+	paths := filepath.SplitList(os.Getenv("PATH"))
+	if len(paths) < 2 || paths[0] != filepath.Dir(brewPath) || paths[1] != oldPath {
+		t.Fatalf("PATH = %q, want brew dir prepended before %q", os.Getenv("PATH"), oldPath)
+	}
+	if !platform.IsBrewInstalled() {
+		t.Fatal("brew not found after PATH update")
 	}
 }
 

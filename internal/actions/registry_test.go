@@ -497,6 +497,41 @@ func TestCategory_GetVisibleActions(t *testing.T) {
 	}
 }
 
+func TestCategory_GetVisibleActions_HidesCommandsWithoutResolvedPlatform(t *testing.T) {
+	t.Parallel()
+
+	category := &Category{
+		Actions: []*Action{
+			{
+				ID:   "linux-command",
+				Type: ActionTypeCommand,
+				PlatformCommands: map[Platform]PlatformCommand{
+					PlatformLinux: {Command: "echo linux"},
+				},
+			},
+			{
+				ID:   "mac-command",
+				Type: ActionTypeCommand,
+				PlatformCommands: map[Platform]PlatformCommand{
+					PlatformMacOS: {Command: "echo mac"},
+				},
+			},
+			{ID: "function", Type: ActionTypeFunction},
+		},
+	}
+
+	visible := category.GetVisibleActions(PlatformDebian)
+	if len(visible) != 2 {
+		t.Fatalf("GetVisibleActions() returned %d items, want 2", len(visible))
+	}
+
+	for _, action := range visible {
+		if action.ID == "mac-command" {
+			t.Fatal("command without resolved platform should be hidden")
+		}
+	}
+}
+
 func TestRegistry_ConcurrentAccess(t *testing.T) {
 	t.Parallel()
 

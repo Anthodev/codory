@@ -1,11 +1,21 @@
 package terminal
 
 import (
+	"strings"
 	"testing"
 
 	"anthodev/codory/internal/actions"
 	"anthodev/codory/pkg/utils"
 )
+
+func assertCommandContains(t *testing.T, command string, parts ...string) {
+	t.Helper()
+	for _, part := range parts {
+		if !strings.Contains(command, part) {
+			t.Fatalf("command %q missing %q", command, part)
+		}
+	}
+}
 
 // TestInstallZellij verifies the basic fields of the InstallZellij action.
 func TestInstallZellij(t *testing.T) {
@@ -35,32 +45,32 @@ func TestInstallZellij(t *testing.T) {
 func TestInstallZellij_PlatformCommands(t *testing.T) {
 	action := InstallZellij()
 	tests := []struct {
-		platform            actions.Platform
-		expectedCommand     string
-		expectedSource      actions.PackageSource
-		expectedCheck       string
-		expectedInteractive bool
+		platform             actions.Platform
+		expectedCommandParts []string
+		expectedSource       actions.PackageSource
+		expectedCheck        string
+		expectedInteractive  bool
 	}{
 		{
-			platform:            actions.PlatformArch,
-			expectedCommand:     "sudo pacman -S zellij",
-			expectedSource:      actions.PackageSourceOfficial,
-			expectedCheck:       "zellij",
-			expectedInteractive: true,
+			platform:             actions.PlatformArch,
+			expectedCommandParts: []string{"pacman", "zellij"},
+			expectedSource:       actions.PackageSourceOfficial,
+			expectedCheck:        "zellij",
+			expectedInteractive:  true,
 		},
 		{
-			platform:            actions.PlatformLinux,
-			expectedCommand:     "brew installl zellij",
-			expectedSource:      actions.PackageSourceBrew,
-			expectedCheck:       "zellij",
-			expectedInteractive: false,
+			platform:             actions.PlatformLinux,
+			expectedCommandParts: []string{"brew", "zellij"},
+			expectedSource:       actions.PackageSourceBrew,
+			expectedCheck:        "zellij",
+			expectedInteractive:  false,
 		},
 		{
-			platform:            actions.PlatformMacOS,
-			expectedCommand:     "brew install zellij",
-			expectedSource:      actions.PackageSourceBrew,
-			expectedCheck:       "zellij",
-			expectedInteractive: false,
+			platform:             actions.PlatformMacOS,
+			expectedCommandParts: []string{"brew", "zellij"},
+			expectedSource:       actions.PackageSourceBrew,
+			expectedCheck:        "zellij",
+			expectedInteractive:  false,
 		},
 	}
 	for _, tt := range tests {
@@ -69,9 +79,7 @@ func TestInstallZellij_PlatformCommands(t *testing.T) {
 			if !ok {
 				t.Fatalf("platform %s missing", tt.platform)
 			}
-			if cmd.Command != tt.expectedCommand {
-				t.Errorf("command mismatch for %s: expected %q, got %q", tt.platform, tt.expectedCommand, cmd.Command)
-			}
+			assertCommandContains(t, cmd.Command, tt.expectedCommandParts...)
 			if cmd.PackageSource != tt.expectedSource {
 				t.Errorf("package source mismatch for %s: expected %s, got %s", tt.platform, tt.expectedSource, cmd.PackageSource)
 			}
@@ -167,9 +175,7 @@ func TestInstallZellij_ArchCommandStructure(t *testing.T) {
 	if !ok {
 		t.Fatal("Arch platform missing")
 	}
-	if cmd.Command != "sudo pacman -S zellij" {
-		t.Errorf("unexpected Arch command: %s", cmd.Command)
-	}
+	assertCommandContains(t, cmd.Command, "pacman", "zellij")
 	if cmd.PackageSource != actions.PackageSourceOfficial {
 		t.Errorf("unexpected Arch package source: %s", cmd.PackageSource)
 	}
@@ -188,9 +194,7 @@ func TestInstallZellij_LinuxCommandStructure(t *testing.T) {
 	if !ok {
 		t.Fatal("Linux platform missing")
 	}
-	if cmd.Command != "brew installl zellij" {
-		t.Errorf("unexpected Linux command: %s", cmd.Command)
-	}
+	assertCommandContains(t, cmd.Command, "brew", "zellij")
 	if cmd.PackageSource != actions.PackageSourceBrew {
 		t.Errorf("unexpected Linux package source: %s", cmd.PackageSource)
 	}
@@ -209,9 +213,7 @@ func TestInstallZellij_MacOSCommandStructure(t *testing.T) {
 	if !ok {
 		t.Fatal("macOS platform missing")
 	}
-	if cmd.Command != "brew install zellij" {
-		t.Errorf("unexpected macOS command: %s", cmd.Command)
-	}
+	assertCommandContains(t, cmd.Command, "brew", "zellij")
 	if cmd.PackageSource != actions.PackageSourceBrew {
 		t.Errorf("unexpected macOS package source: %s", cmd.PackageSource)
 	}

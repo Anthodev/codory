@@ -13,11 +13,13 @@ func InstallNeovim() *actions.Action {
 				Command:       "sudo pacman -S neovim",
 				PackageSource: actions.PackageSourceOfficial,
 				CheckCommand:  "nvim",
+				Interactive:   true,
 			},
 			actions.PlatformDebian: {
 				Command:       "sudo apt install neovim",
 				PackageSource: actions.PackageSourceOfficial,
 				CheckCommand:  "nvim",
+				Interactive:   true,
 			},
 			actions.PlatformLinux: {
 				Command:       "brew install neovim",

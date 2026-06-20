@@ -90,9 +90,7 @@ func TestGenerateUUIDv7_ClipboardError(t *testing.T) {
 	// We can't easily mock the clipboard in the current implementation, but we can
 	// at least verify that the function doesn't panic and returns a valid result
 
-	// The current implementation uses log.Fatal on clipboard error, which would stop the test
-	// In a real application, this should be handled more gracefully
-	// For now, we'll just ensure the basic functionality works
+	// Clipboard errors should be returned instead of terminating the process.
 
 	ctx := context.Background()
 	result, err := generateUUIDv7(ctx)

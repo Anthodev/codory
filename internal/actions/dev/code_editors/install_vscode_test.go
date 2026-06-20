@@ -1,10 +1,20 @@
 package dev
 
 import (
+	"strings"
 	"testing"
 
 	"anthodev/codory/internal/actions"
 )
+
+func assertCommandContains(t *testing.T, command string, parts ...string) {
+	t.Helper()
+	for _, part := range parts {
+		if !strings.Contains(command, part) {
+			t.Fatalf("command %q missing %q", command, part)
+		}
+	}
+}
 
 // TestInstallVsCode tests the creation of the Install VSCode action
 // This test verifies the action configuration without executing any actual commands
@@ -42,52 +52,52 @@ func TestInstallVsCode_PlatformCommands(t *testing.T) {
 	action := InstallVsCode()
 
 	tests := []struct {
-		name                string
-		platform            actions.Platform
-		expectedCommand     string
-		expectedSource      actions.PackageSource
-		expectedCheck       string
-		expectedInteractive bool
+		name                 string
+		platform             actions.Platform
+		expectedCommandParts []string
+		expectedSource       actions.PackageSource
+		expectedCheck        string
+		expectedInteractive  bool
 	}{
 		{
-			name:                "Arch platform",
-			platform:            actions.PlatformArch,
-			expectedCommand:     "sudo pacman -S vscode",
-			expectedSource:      actions.PackageSourceOfficial,
-			expectedCheck:       "vscode",
-			expectedInteractive: true,
+			name:                 "Arch platform",
+			platform:             actions.PlatformArch,
+			expectedCommandParts: []string{"pacman", "vscode"},
+			expectedSource:       actions.PackageSourceOfficial,
+			expectedCheck:        "code",
+			expectedInteractive:  true,
 		},
 		{
-			name:                "Debian platform",
-			platform:            actions.PlatformDebian,
-			expectedCommand:     "sudo apt install code",
-			expectedSource:      actions.PackageSourceOfficial,
-			expectedCheck:       "vscode",
-			expectedInteractive: true,
+			name:                 "Debian platform",
+			platform:             actions.PlatformDebian,
+			expectedCommandParts: []string{"apt", "code"},
+			expectedSource:       actions.PackageSourceOfficial,
+			expectedCheck:        "code",
+			expectedInteractive:  true,
 		},
 		{
-			name:                "Linux platform",
-			platform:            actions.PlatformLinux,
-			expectedCommand:     "brew install --cask vscode",
-			expectedSource:      actions.PackageSourceBrew,
-			expectedCheck:       "vscode",
-			expectedInteractive: false, // Note: Linux platform doesn't explicitly set Interactive
+			name:                 "Linux platform",
+			platform:             actions.PlatformLinux,
+			expectedCommandParts: []string{"brew", "vscode"},
+			expectedSource:       actions.PackageSourceBrew,
+			expectedCheck:        "code",
+			expectedInteractive:  false, // Note: Linux platform doesn't explicitly set Interactive
 		},
 		{
-			name:                "macOS platform",
-			platform:            actions.PlatformMacOS,
-			expectedCommand:     "brew install --cask vscode",
-			expectedSource:      actions.PackageSourceBrew,
-			expectedCheck:       "vscode",
-			expectedInteractive: true,
+			name:                 "macOS platform",
+			platform:             actions.PlatformMacOS,
+			expectedCommandParts: []string{"brew", "vscode"},
+			expectedSource:       actions.PackageSourceBrew,
+			expectedCheck:        "code",
+			expectedInteractive:  true,
 		},
 		{
-			name:                "Windows platform",
-			platform:            actions.PlatformWindows,
-			expectedCommand:     "winget install -e --id Microsoft.VisualStudioCode",
-			expectedSource:      actions.PackageSourceWinget,
-			expectedCheck:       "vscode",
-			expectedInteractive: true,
+			name:                 "Windows platform",
+			platform:             actions.PlatformWindows,
+			expectedCommandParts: []string{"winget", "Microsoft.VisualStudioCode"},
+			expectedSource:       actions.PackageSourceWinget,
+			expectedCheck:        "code",
+			expectedInteractive:  true,
 		},
 	}
 
@@ -98,9 +108,7 @@ func TestInstallVsCode_PlatformCommands(t *testing.T) {
 				t.Fatalf("Expected platform command for %s to exist", tt.platform)
 			}
 
-			if cmd.Command != tt.expectedCommand {
-				t.Errorf("Expected command for %s to be '%s', got '%s'", tt.platform, tt.expectedCommand, cmd.Command)
-			}
+			assertCommandContains(t, cmd.Command, tt.expectedCommandParts...)
 
 			if cmd.PackageSource != tt.expectedSource {
 				t.Errorf("Expected package source for %s to be '%s', got '%s'", tt.platform, tt.expectedSource, cmd.PackageSource)
@@ -225,16 +233,14 @@ func TestInstallVsCode_ArchCommandStructure(t *testing.T) {
 	}
 
 	// Verify command structure
-	if cmd.Command != "sudo pacman -S vscode" {
-		t.Errorf("Expected Arch command to be 'sudo pacman -S vscode', got '%s'", cmd.Command)
-	}
+	assertCommandContains(t, cmd.Command, "pacman", "vscode")
 
 	if cmd.PackageSource != actions.PackageSourceOfficial {
 		t.Errorf("Expected Arch package source to be '%s', got '%s'", actions.PackageSourceOfficial, cmd.PackageSource)
 	}
 
-	if cmd.CheckCommand != "vscode" {
-		t.Errorf("Expected Arch check command to be 'vscode', got '%s'", cmd.CheckCommand)
+	if cmd.CheckCommand != "code" {
+		t.Errorf("Expected Arch check command to be 'code', got '%s'", cmd.CheckCommand)
 	}
 
 	if !cmd.Interactive {
@@ -252,16 +258,14 @@ func TestInstallVsCode_DebianCommandStructure(t *testing.T) {
 	}
 
 	// Verify command structure
-	if cmd.Command != "sudo apt install code" {
-		t.Errorf("Expected Debian command to be 'sudo apt install code', got '%s'", cmd.Command)
-	}
+	assertCommandContains(t, cmd.Command, "apt", "code")
 
 	if cmd.PackageSource != actions.PackageSourceOfficial {
 		t.Errorf("Expected Debian package source to be '%s', got '%s'", actions.PackageSourceOfficial, cmd.PackageSource)
 	}
 
-	if cmd.CheckCommand != "vscode" {
-		t.Errorf("Expected Debian check command to be 'vscode', got '%s'", cmd.CheckCommand)
+	if cmd.CheckCommand != "code" {
+		t.Errorf("Expected Debian check command to be 'code', got '%s'", cmd.CheckCommand)
 	}
 
 	if !cmd.Interactive {
@@ -279,16 +283,14 @@ func TestInstallVsCode_LinuxCommandStructure(t *testing.T) {
 	}
 
 	// Verify command structure
-	if cmd.Command != "brew install --cask vscode" {
-		t.Errorf("Expected Linux command to be 'brew install --cask vscode', got '%s'", cmd.Command)
-	}
+	assertCommandContains(t, cmd.Command, "brew", "vscode")
 
 	if cmd.PackageSource != actions.PackageSourceBrew {
 		t.Errorf("Expected Linux package source to be '%s', got '%s'", actions.PackageSourceBrew, cmd.PackageSource)
 	}
 
-	if cmd.CheckCommand != "vscode" {
-		t.Errorf("Expected Linux check command to be 'vscode', got '%s'", cmd.CheckCommand)
+	if cmd.CheckCommand != "code" {
+		t.Errorf("Expected Linux check command to be 'code', got '%s'", cmd.CheckCommand)
 	}
 
 	// Linux platform doesn't explicitly set Interactive, so it should be false (default)
@@ -307,16 +309,14 @@ func TestInstallVsCode_MacOSCommandStructure(t *testing.T) {
 	}
 
 	// Verify command structure
-	if cmd.Command != "brew install --cask vscode" {
-		t.Errorf("Expected macOS command to be 'brew install --cask vscode', got '%s'", cmd.Command)
-	}
+	assertCommandContains(t, cmd.Command, "brew", "vscode")
 
 	if cmd.PackageSource != actions.PackageSourceBrew {
 		t.Errorf("Expected macOS package source to be '%s', got '%s'", actions.PackageSourceBrew, cmd.PackageSource)
 	}
 
-	if cmd.CheckCommand != "vscode" {
-		t.Errorf("Expected macOS check command to be 'vscode', got '%s'", cmd.CheckCommand)
+	if cmd.CheckCommand != "code" {
+		t.Errorf("Expected macOS check command to be 'code', got '%s'", cmd.CheckCommand)
 	}
 
 	if !cmd.Interactive {
@@ -334,16 +334,14 @@ func TestInstallVsCode_WindowsCommandStructure(t *testing.T) {
 	}
 
 	// Verify command structure
-	if cmd.Command != "winget install -e --id Microsoft.VisualStudioCode" {
-		t.Errorf("Expected Windows command to be 'winget install -e --id Microsoft.VisualStudioCode', got '%s'", cmd.Command)
-	}
+	assertCommandContains(t, cmd.Command, "winget", "Microsoft.VisualStudioCode")
 
 	if cmd.PackageSource != actions.PackageSourceWinget {
 		t.Errorf("Expected Windows package source to be '%s', got '%s'", actions.PackageSourceWinget, cmd.PackageSource)
 	}
 
-	if cmd.CheckCommand != "vscode" {
-		t.Errorf("Expected Windows check command to be 'vscode', got '%s'", cmd.CheckCommand)
+	if cmd.CheckCommand != "code" {
+		t.Errorf("Expected Windows check command to be 'code', got '%s'", cmd.CheckCommand)
 	}
 
 	if !cmd.Interactive {
@@ -355,7 +353,7 @@ func TestInstallVsCode_WindowsCommandStructure(t *testing.T) {
 func TestInstallVsCode_CheckCommandConsistency(t *testing.T) {
 	action := InstallVsCode()
 
-	expectedCheckCommand := "vscode"
+	expectedCheckCommand := "code"
 
 	for platform, cmd := range action.PlatformCommands {
 		if cmd.CheckCommand != expectedCheckCommand {

@@ -3,7 +3,6 @@ package ui
 import (
 	"context"
 	"fmt"
-	"os/exec"
 	"strings"
 
 	"anthodev/codory/internal/actions"
@@ -104,7 +103,7 @@ func executeInteractiveCommand(cmdStr string, action *actions.Action, executor *
 		}
 	}
 
-	c := exec.Command("sh", "-c", cmdStr)
+	c := actions.NewShellCommand(context.Background(), cmdStr)
 	return tea.ExecProcess(c, func(err error) tea.Msg {
 		if err != nil {
 			return actionCompleteMsg{
@@ -121,6 +120,13 @@ func executeInteractiveCommand(cmdStr string, action *actions.Action, executor *
 			err:    nil,
 		}
 	})
+}
+
+func executePackageManagerInstall(source actions.PackageSource, executor *actions.Executor) tea.Cmd {
+	return func() tea.Msg {
+		result, err := executor.InstallPackageManager(context.Background(), source)
+		return actionCompleteMsg{result: result, err: err}
+	}
 }
 
 func executeActionWithArgs(action *actions.Action, executor *actions.Executor, args []string) tea.Cmd {
@@ -147,6 +153,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m.updateMenu(msg)
 		case stateInput:
 			return m.updateInput(msg)
+		case statePackageManagerPrompt:
+			return m.updatePackageManagerPrompt(msg)
 		case stateResult:
 			return m.updateResult(msg)
 		}
@@ -234,6 +242,14 @@ func (m Model) selectItem() (tea.Model, tea.Cmd) {
 	if actionIndex < len(visibleActions) {
 		action := visibleActions[actionIndex]
 
+		if needs, source := m.executor.NeedsPackageManagerInstallation(action); needs {
+			m.pendingAction = action
+			m.needsPackageManager = true
+			m.packageManagerType = source
+			m.state = statePackageManagerPrompt
+			return m, nil
+		}
+
 		if len(action.Arguments) > 0 {
 			// Initialize input state
 			m.executingAction = action
@@ -263,6 +279,25 @@ func (m Model) selectItem() (tea.Model, tea.Cmd) {
 		m.executingAction = action
 		m.state = stateExecuting
 		return m, executeAction(action, m.executor)
+	}
+
+	return m, nil
+}
+
+func (m Model) updatePackageManagerPrompt(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "ctrl+c", "q":
+		return m, tea.Quit
+	case "esc", "n", "N":
+		m.pendingAction = nil
+		m.needsPackageManager = false
+		m.packageManagerType = ""
+		m.state = stateMenu
+		return m, nil
+	case "enter", "y", "Y":
+		m.executingAction = &actions.Action{Name: fmt.Sprintf("Install %s", packageManagerName(m.packageManagerType))}
+		m.state = stateExecuting
+		return m, executePackageManagerInstall(m.packageManagerType, m.executor)
 	}
 
 	return m, nil
@@ -302,6 +337,14 @@ func (m Model) updateInput(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 		// Check if we have all arguments
 		if m.currentInput >= len(m.executingAction.Arguments) {
+			if needs, source := m.executor.NeedsPackageManagerInstallation(m.executingAction); needs {
+				m.pendingAction = m.executingAction
+				m.needsPackageManager = true
+				m.packageManagerType = source
+				m.state = statePackageManagerPrompt
+				return m, nil
+			}
+
 			// Execute the action with collected args
 			m.state = stateExecuting
 
@@ -350,6 +393,8 @@ func (m Model) View() string {
 		content = m.viewInput()
 	case stateExecuting:
 		content = m.viewExecuting()
+	case statePackageManagerPrompt:
+		content = m.viewPackageManagerPrompt()
 	case stateResult:
 		content = m.viewResult()
 	default:
@@ -451,7 +496,41 @@ func (m Model) viewInput() string {
 }
 
 func (m Model) viewExecuting() string {
+	if m.executingAction == nil {
+		return "\n  Executing...\n\n"
+	}
 	return fmt.Sprintf("\n  Executing: %s...\n\n", m.executingAction.Name)
+}
+
+func (m Model) viewPackageManagerPrompt() string {
+	var s strings.Builder
+
+	actionName := "selected action"
+	if m.pendingAction != nil {
+		actionName = m.pendingAction.Name
+	}
+
+	s.WriteString("\n")
+	s.WriteString(titleStyle.Render("Package manager required"))
+	s.WriteString("\n\n")
+	s.WriteString(fmt.Sprintf("%s requires %s. Install it now?", actionName, packageManagerName(m.packageManagerType)))
+	s.WriteString("\n\n")
+	s.WriteString(helpStyle.Render("y/enter: install • n/esc: cancel • q: quit"))
+
+	return s.String()
+}
+
+func packageManagerName(source actions.PackageSource) string {
+	switch source {
+	case actions.PackageSourceAUR:
+		return "Yay"
+	case actions.PackageSourceBrew:
+		return "Homebrew"
+	case actions.PackageSourceWinget:
+		return "Winget"
+	default:
+		return string(source)
+	}
 }
 
 func (m Model) viewResult() string {

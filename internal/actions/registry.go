@@ -104,6 +104,9 @@ func (c *Category) GetVisibleActions(platform Platform) []*Action {
 		if action.IsHiddenOnPlatform(platform) {
 			continue
 		}
+		if action.Type == ActionTypeCommand && !action.HasCommandForPlatform(platform) {
+			continue
+		}
 
 		if len(action.VisibleOnPlatforms) > 0 {
 			// Action has specific platforms where it should be visible

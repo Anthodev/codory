@@ -120,33 +120,32 @@ func (a *Action) GetPlatformCommand(platform Platform) (PlatformCommand, bool) {
 	return PlatformCommand{}, false
 }
 
-func (a *Action) HasCommandForPlatform(platform Platform) bool {
-	_, ok := a.GetPlatformCommand(platform)
-	if ok {
-		return true
+func (a *Action) ResolvePlatformCommand(platform Platform) (PlatformCommand, bool) {
+	if cmd, ok := a.GetPlatformCommand(platform); ok {
+		return cmd, true
 	}
 
 	if platform == PlatformDebian || platform == PlatformArch {
-		_, ok = a.GetPlatformCommand(PlatformLinux)
-		if ok {
-			return true
+		if cmd, ok := a.GetPlatformCommand(PlatformLinux); ok {
+			return cmd, true
 		}
 	}
 
-	_, ok = a.GetPlatformCommand(PlatformAny)
+	return a.GetPlatformCommand(PlatformAny)
+}
+
+func (a *Action) HasCommandForPlatform(platform Platform) bool {
+	_, ok := a.ResolvePlatformCommand(platform)
 	return ok
 }
 
 func (a *Action) HasCheckCommand(platform Platform) bool {
-	cmd, ok := a.GetPlatformCommand(platform)
-	if !ok {
-		return false
-	}
-	return cmd.CheckCommand != ""
+	_, ok := a.GetCheckCommand(platform)
+	return ok
 }
 
 func (a *Action) GetCheckCommand(platform Platform) (string, bool) {
-	cmd, ok := a.GetPlatformCommand(platform)
+	cmd, ok := a.ResolvePlatformCommand(platform)
 	if !ok {
 		return "", false
 	}

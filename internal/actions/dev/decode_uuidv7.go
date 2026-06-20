@@ -27,12 +27,16 @@ func DecodeUUIDv7Action() *actions.Action {
 }
 
 func decodeUUIDv7(ctx context.Context) (string, error) {
-	args := ctx.Value(actions.ArgsContextKey).([]string)
-	id := args[0]
+	args, ok := ctx.Value(actions.ArgsContextKey).([]string)
+	if !ok || len(args) == 0 || strings.TrimSpace(args[0]) == "" {
+		return "", fmt.Errorf("invalid UUIDv7: missing argument")
+	}
+
+	id := strings.TrimSpace(args[0])
 
 	uuidDatetime, err := uuid7stringToAtom(id)
 	if err != nil {
-		return "", fmt.Errorf("invalid UUIDv7")
+		return "", fmt.Errorf("invalid UUIDv7: %w", err)
 	}
 
 	return fmt.Sprintf("Datetime decoded for %s: %s", id, uuidDatetime), nil
@@ -45,14 +49,25 @@ func uuid7stringToAtom(uuid string) (string, error) {
 		computedUuid = strings.ReplaceAll(uuid, "-", "")
 	}
 
-	if len(computedUuid) != 32 && len(computedUuid) != 36 {
+	if len(computedUuid) != 32 {
 		return "", fmt.Errorf("bad length")
 	}
 
-	tsBytes, err := hex.DecodeString(computedUuid[:12])
+	decoded, err := hex.DecodeString(computedUuid)
 	if err != nil {
 		return "", err
 	}
+
+	if computedUuid[12] != '7' {
+		return "", fmt.Errorf("not version 7")
+	}
+
+	variant := decoded[8] >> 6
+	if variant != 0b10 {
+		return "", fmt.Errorf("not RFC 4122 variant")
+	}
+
+	tsBytes := decoded[:6]
 	ms := uint64(tsBytes[0])<<40 | uint64(tsBytes[1])<<32 |
 		uint64(tsBytes[2])<<24 | uint64(tsBytes[3])<<16 |
 		uint64(tsBytes[4])<<8 | uint64(tsBytes[5])

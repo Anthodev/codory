@@ -14,11 +14,13 @@ func AddCurrentUserToDockerGroupAction() *actions.Action {
 				Command:       "sudo usermod -aG docker $USER",
 				PackageSource: actions.PackageSourceAny,
 				CheckCommand:  "(groups | grep docker) || which docker",
+				Interactive:   true,
 			},
 			actions.PlatformMacOS: {
 				Command:       "sudo dseditgroup -o edit -a $USER -t user docker",
 				PackageSource: actions.PackageSourceAny,
 				CheckCommand:  "(groups | grep docker) || which docker",
+				Interactive:   true,
 			},
 		},
 	}

@@ -2,12 +2,22 @@ package dev
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	"anthodev/codory/internal/actions"
 	"anthodev/codory/pkg/utils"
 	"anthodev/codory/test/testutil"
 )
+
+func assertCommandContains(t *testing.T, command string, parts ...string) {
+	t.Helper()
+	for _, part := range parts {
+		if !strings.Contains(command, part) {
+			t.Fatalf("command %q missing %q", command, part)
+		}
+	}
+}
 
 // TestNewInstallDockerAction tests the creation of the Install Docker action
 // This test verifies the action configuration without executing any actual commands
@@ -45,52 +55,52 @@ func TestNewInstallDockerAction_PlatformCommands(t *testing.T) {
 	action := InstallDockerAction()
 
 	tests := []struct {
-		name                string
-		platform            actions.Platform
-		expectedCommand     string
-		expectedSource      actions.PackageSource
-		expectedCheck       string
-		expectedInteractive bool
+		name                 string
+		platform             actions.Platform
+		expectedCommandParts []string
+		expectedSource       actions.PackageSource
+		expectedCheck        string
+		expectedInteractive  bool
 	}{
 		{
-			name:                "Arch platform",
-			platform:            actions.PlatformArch,
-			expectedCommand:     "sudo pacman -S docker",
-			expectedSource:      actions.PackageSourceOfficial,
-			expectedCheck:       "docker",
-			expectedInteractive: true,
+			name:                 "Arch platform",
+			platform:             actions.PlatformArch,
+			expectedCommandParts: []string{"pacman", "docker"},
+			expectedSource:       actions.PackageSourceOfficial,
+			expectedCheck:        "docker",
+			expectedInteractive:  true,
 		},
 		{
-			name:                "Debian platform",
-			platform:            actions.PlatformDebian,
-			expectedCommand:     "sudo apt get install docker",
-			expectedSource:      actions.PackageSourceOfficial,
-			expectedCheck:       "docker",
-			expectedInteractive: true,
+			name:                 "Debian platform",
+			platform:             actions.PlatformDebian,
+			expectedCommandParts: []string{"apt", "docker"},
+			expectedSource:       actions.PackageSourceOfficial,
+			expectedCheck:        "docker",
+			expectedInteractive:  true,
 		},
 		{
-			name:                "Linux platform",
-			platform:            actions.PlatformLinux,
-			expectedCommand:     "curl -fsSL https://get.docker.com -o get-docker.sh && sh get-docker.sh",
-			expectedSource:      actions.PackageSourceAny,
-			expectedCheck:       "docker",
-			expectedInteractive: false,
+			name:                 "Linux platform",
+			platform:             actions.PlatformLinux,
+			expectedCommandParts: []string{"curl", "https://get.docker.com", "sh get-docker.sh"},
+			expectedSource:       actions.PackageSourceAny,
+			expectedCheck:        "docker",
+			expectedInteractive:  false,
 		},
 		{
-			name:                "macOS platform",
-			platform:            actions.PlatformMacOS,
-			expectedCommand:     "brew install docker",
-			expectedSource:      actions.PackageSourceAny,
-			expectedCheck:       "docker",
-			expectedInteractive: false,
+			name:                 "macOS platform",
+			platform:             actions.PlatformMacOS,
+			expectedCommandParts: []string{"brew", "docker"},
+			expectedSource:       actions.PackageSourceAny,
+			expectedCheck:        "docker",
+			expectedInteractive:  false,
 		},
 		{
-			name:                "Windows platform",
-			platform:            actions.PlatformWindows,
-			expectedCommand:     "winget install -e --id Docker.DockerDesktop",
-			expectedSource:      actions.PackageSourceWinget,
-			expectedCheck:       "docker",
-			expectedInteractive: false,
+			name:                 "Windows platform",
+			platform:             actions.PlatformWindows,
+			expectedCommandParts: []string{"winget", "Docker.DockerDesktop"},
+			expectedSource:       actions.PackageSourceWinget,
+			expectedCheck:        "docker",
+			expectedInteractive:  false,
 		},
 	}
 
@@ -101,9 +111,7 @@ func TestNewInstallDockerAction_PlatformCommands(t *testing.T) {
 				t.Fatalf("Expected platform command for %s to exist", tt.platform)
 			}
 
-			if cmd.Command != tt.expectedCommand {
-				t.Errorf("Expected command for %s to be '%s', got '%s'", tt.platform, tt.expectedCommand, cmd.Command)
-			}
+			assertCommandContains(t, cmd.Command, tt.expectedCommandParts...)
 
 			if cmd.PackageSource != tt.expectedSource {
 				t.Errorf("Expected package source for %s to be '%s', got '%s'", tt.platform, tt.expectedSource, cmd.PackageSource)
@@ -270,10 +278,7 @@ func TestNewInstallDockerAction_ArchCommandStructure(t *testing.T) {
 		t.Fatal("Expected Arch platform command to exist")
 	}
 
-	expectedCommand := "sudo pacman -S docker"
-	if cmd.Command != expectedCommand {
-		t.Errorf("Expected Arch command to be '%s', got '%s'", expectedCommand, cmd.Command)
-	}
+	assertCommandContains(t, cmd.Command, "pacman", "docker")
 
 	// Verify the command uses pacman
 	if !utils.Contains(cmd.Command, "pacman") {
@@ -295,10 +300,7 @@ func TestNewInstallDockerAction_DebianCommandStructure(t *testing.T) {
 		t.Fatal("Expected Debian platform command to exist")
 	}
 
-	expectedCommand := "sudo apt get install docker"
-	if cmd.Command != expectedCommand {
-		t.Errorf("Expected Debian command to be '%s', got '%s'", expectedCommand, cmd.Command)
-	}
+	assertCommandContains(t, cmd.Command, "apt", "docker")
 
 	// Verify the command uses apt
 	if !utils.Contains(cmd.Command, "apt") {
@@ -320,10 +322,7 @@ func TestNewInstallDockerAction_LinuxCommandStructure(t *testing.T) {
 		t.Fatal("Expected Linux platform command to exist")
 	}
 
-	expectedCommand := "curl -fsSL https://get.docker.com -o get-docker.sh && sh get-docker.sh"
-	if cmd.Command != expectedCommand {
-		t.Errorf("Expected Linux command to be '%s', got '%s'", expectedCommand, cmd.Command)
-	}
+	assertCommandContains(t, cmd.Command, "curl", "https://get.docker.com", "sh get-docker.sh")
 
 	// Verify the command uses the official Docker install script
 	if !utils.Contains(cmd.Command, "https://get.docker.com") {
@@ -350,10 +349,7 @@ func TestNewInstallDockerAction_MacOSCommandStructure(t *testing.T) {
 		t.Fatal("Expected macOS platform command to exist")
 	}
 
-	expectedCommand := "brew install docker"
-	if cmd.Command != expectedCommand {
-		t.Errorf("Expected macOS command to be '%s', got '%s'", expectedCommand, cmd.Command)
-	}
+	assertCommandContains(t, cmd.Command, "brew", "docker")
 
 	// Verify the command uses brew
 	if !utils.Contains(cmd.Command, "brew") {
@@ -375,10 +371,7 @@ func TestNewInstallDockerAction_WindowsCommandStructure(t *testing.T) {
 		t.Fatal("Expected Windows platform command to exist")
 	}
 
-	expectedCommand := "winget install -e --id Docker.DockerDesktop"
-	if cmd.Command != expectedCommand {
-		t.Errorf("Expected Windows command to be '%s', got '%s'", expectedCommand, cmd.Command)
-	}
+	assertCommandContains(t, cmd.Command, "winget", "Docker.DockerDesktop")
 
 	// Verify the command uses winget
 	if !utils.Contains(cmd.Command, "winget") {

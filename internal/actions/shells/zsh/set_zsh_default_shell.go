@@ -24,6 +24,10 @@ func setZshAsDefaultShell(ctx context.Context) (string, error) {
 	if err := validateZshInstallation(); err != nil {
 		return "", err
 	}
+	zshPath, err := exec.LookPath("zsh")
+	if err != nil {
+		return "", fmt.Errorf("Zsh is not installed")
+	}
 
 	// Check if Zsh is already the default shell
 	if shell, err := exec.Command("sh", "-c", "echo $SHELL").Output(); err != nil || strings.Contains(string(shell), "zsh") {
@@ -31,7 +35,7 @@ func setZshAsDefaultShell(ctx context.Context) (string, error) {
 	}
 
 	// Try to set Zsh as the default shell
-	if err := exec.Command("chsh", "-s", "$(which zsh)").Run(); err != nil {
+	if err := exec.Command("chsh", "-s", zshPath).Run(); err != nil {
 		return "", fmt.Errorf("failed to set Zsh as default shell: %w", err)
 	}
 

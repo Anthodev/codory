@@ -16,7 +16,7 @@ func InstallDockerAction() *actions.Action {
 				Interactive:   true,
 			},
 			actions.PlatformDebian: {
-				Command:       "sudo apt get install docker",
+				Command:       "sudo apt install docker",
 				PackageSource: actions.PackageSourceOfficial,
 				CheckCommand:  "docker",
 				Interactive:   true,

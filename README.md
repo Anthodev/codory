@@ -33,3 +33,18 @@ A cross-platform CLI application built with Bubble Tea for managing various deve
 
 ```bash
 brew install anthodev/tap/codory
+```
+
+### From source
+
+```bash
+git clone https://github.com/anthodev/codory.git
+cd codory
+go build -o codory .
+```
+
+## Usage
+
+```bash
+./codory
+```

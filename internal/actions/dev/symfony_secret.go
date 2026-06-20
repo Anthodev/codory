@@ -5,7 +5,6 @@ import (
 	"context"
 	crypto_rand "crypto/rand"
 	"fmt"
-	"log"
 
 	"github.com/atotto/clipboard"
 )
@@ -28,7 +27,7 @@ func generateSymfonySecret(ctx context.Context) (string, error) {
 	_, err := crypto_rand.Read(bytes)
 
 	if err != nil {
-		log.Fatal(err)
+		return "", fmt.Errorf("generate Symfony secret: %w", err)
 	}
 
 	for i, b := range bytes {
@@ -38,7 +37,7 @@ func generateSymfonySecret(ctx context.Context) (string, error) {
 	result := string(bytes)
 
 	if err := clipboard.WriteAll(result); err != nil {
-		log.Fatal(err)
+		return "", fmt.Errorf("copy Symfony secret to clipboard: %w", err)
 	}
 
 	return fmt.Sprintf("Generated Symfony secret: %s, copied to clipboard!", result), nil

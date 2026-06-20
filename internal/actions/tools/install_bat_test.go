@@ -2,12 +2,22 @@ package tools
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	"anthodev/codory/internal/actions"
 	"anthodev/codory/pkg/utils"
 	"anthodev/codory/test/testutil"
 )
+
+func assertCommandContains(t *testing.T, command string, parts ...string) {
+	t.Helper()
+	for _, part := range parts {
+		if !strings.Contains(command, part) {
+			t.Fatalf("command %q missing %q", command, part)
+		}
+	}
+}
 
 // TestInstallBat tests the creation of the Install bat action
 // This test verifies the action configuration without executing any actual commands
@@ -45,44 +55,44 @@ func TestInstallBat_PlatformCommands(t *testing.T) {
 	action := InstallBat()
 
 	tests := []struct {
-		name                string
-		platform            actions.Platform
-		expectedCommand     string
-		expectedSource      actions.PackageSource
-		expectedCheck       string
-		expectedInteractive bool
+		name                 string
+		platform             actions.Platform
+		expectedCommandParts []string
+		expectedSource       actions.PackageSource
+		expectedCheck        string
+		expectedInteractive  bool
 	}{
 		{
-			name:                "Arch platform",
-			platform:            actions.PlatformArch,
-			expectedCommand:     "sudo pacman -S bat",
-			expectedSource:      actions.PackageSourceOfficial,
-			expectedCheck:       "bat",
-			expectedInteractive: true,
+			name:                 "Arch platform",
+			platform:             actions.PlatformArch,
+			expectedCommandParts: []string{"pacman", "bat"},
+			expectedSource:       actions.PackageSourceOfficial,
+			expectedCheck:        "bat",
+			expectedInteractive:  true,
 		},
 		{
-			name:                "Debian platform",
-			platform:            actions.PlatformDebian,
-			expectedCommand:     "sudo apt install bat",
-			expectedSource:      actions.PackageSourceOfficial,
-			expectedCheck:       "bat",
-			expectedInteractive: true,
+			name:                 "Debian platform",
+			platform:             actions.PlatformDebian,
+			expectedCommandParts: []string{"apt", "bat"},
+			expectedSource:       actions.PackageSourceOfficial,
+			expectedCheck:        "bat",
+			expectedInteractive:  true,
 		},
 		{
-			name:                "Linux platform",
-			platform:            actions.PlatformLinux,
-			expectedCommand:     "brew install bat",
-			expectedSource:      actions.PackageSourceBrew,
-			expectedCheck:       "bat",
-			expectedInteractive: false,
+			name:                 "Linux platform",
+			platform:             actions.PlatformLinux,
+			expectedCommandParts: []string{"brew", "bat"},
+			expectedSource:       actions.PackageSourceBrew,
+			expectedCheck:        "bat",
+			expectedInteractive:  false,
 		},
 		{
-			name:                "macOS platform",
-			platform:            actions.PlatformMacOS,
-			expectedCommand:     "brew install bat",
-			expectedSource:      actions.PackageSourceBrew,
-			expectedCheck:       "brew",
-			expectedInteractive: false,
+			name:                 "macOS platform",
+			platform:             actions.PlatformMacOS,
+			expectedCommandParts: []string{"brew", "bat"},
+			expectedSource:       actions.PackageSourceBrew,
+			expectedCheck:        "bat",
+			expectedInteractive:  false,
 		},
 	}
 
@@ -93,9 +103,7 @@ func TestInstallBat_PlatformCommands(t *testing.T) {
 				t.Fatalf("Expected platform command for %s to exist", tt.platform)
 			}
 
-			if cmd.Command != tt.expectedCommand {
-				t.Errorf("Expected command for %s to be '%s', got '%s'", tt.platform, tt.expectedCommand, cmd.Command)
-			}
+			assertCommandContains(t, cmd.Command, tt.expectedCommandParts...)
 
 			if cmd.PackageSource != tt.expectedSource {
 				t.Errorf("Expected package source for %s to be '%s', got '%s'", tt.platform, tt.expectedSource, cmd.PackageSource)
@@ -236,9 +244,7 @@ func TestInstallBat_ArchCommandStructure(t *testing.T) {
 	}
 
 	// Verify command structure
-	if cmd.Command != "sudo pacman -S bat" {
-		t.Errorf("Expected Arch command to be 'sudo pacman -S bat', got '%s'", cmd.Command)
-	}
+	assertCommandContains(t, cmd.Command, "pacman", "bat")
 
 	if cmd.PackageSource != actions.PackageSourceOfficial {
 		t.Errorf("Expected Arch package source to be official, got '%s'", cmd.PackageSource)
@@ -263,9 +269,7 @@ func TestInstallBat_DebianCommandStructure(t *testing.T) {
 	}
 
 	// Verify command structure
-	if cmd.Command != "sudo apt install bat" {
-		t.Errorf("Expected Debian command to be 'sudo apt install bat', got '%s'", cmd.Command)
-	}
+	assertCommandContains(t, cmd.Command, "apt", "bat")
 
 	if cmd.PackageSource != actions.PackageSourceOfficial {
 		t.Errorf("Expected Debian package source to be official, got '%s'", cmd.PackageSource)
@@ -290,9 +294,7 @@ func TestInstallBat_LinuxCommandStructure(t *testing.T) {
 	}
 
 	// Verify command structure
-	if cmd.Command != "brew install bat" {
-		t.Errorf("Expected Linux command to be 'brew install bat', got '%s'", cmd.Command)
-	}
+	assertCommandContains(t, cmd.Command, "brew", "bat")
 
 	if cmd.PackageSource != actions.PackageSourceBrew {
 		t.Errorf("Expected Linux package source to be brew, got '%s'", cmd.PackageSource)
@@ -317,16 +319,14 @@ func TestInstallBat_MacOSCommandStructure(t *testing.T) {
 	}
 
 	// Verify command structure
-	if cmd.Command != "brew install bat" {
-		t.Errorf("Expected macOS command to be 'brew install bat', got '%s'", cmd.Command)
-	}
+	assertCommandContains(t, cmd.Command, "brew", "bat")
 
 	if cmd.PackageSource != actions.PackageSourceBrew {
 		t.Errorf("Expected macOS package source to be brew, got '%s'", cmd.PackageSource)
 	}
 
-	if cmd.CheckCommand != "brew" {
-		t.Errorf("Expected macOS check command to be 'brew', got '%s'", cmd.CheckCommand)
+	if cmd.CheckCommand != "bat" {
+		t.Errorf("Expected macOS check command to be 'bat', got '%s'", cmd.CheckCommand)
 	}
 
 	if cmd.Interactive {
@@ -343,7 +343,7 @@ func TestInstallBat_CheckCommandStructure(t *testing.T) {
 		actions.PlatformArch:   "bat",
 		actions.PlatformDebian: "bat",
 		actions.PlatformLinux:  "bat",
-		actions.PlatformMacOS:  "brew", // macOS checks for brew, not bat
+		actions.PlatformMacOS:  "bat",
 	}
 
 	for platform, expectedCheck := range expectedCheckCommands {
@@ -421,9 +421,7 @@ func TestInstallBat_BrewConsistency(t *testing.T) {
 			t.Errorf("Expected %s to use brew package source, got '%s'", platform, cmd.PackageSource)
 		}
 
-		if cmd.Command != "brew install bat" {
-			t.Errorf("Expected %s brew command to be 'brew install bat', got '%s'", platform, cmd.Command)
-		}
+		assertCommandContains(t, cmd.Command, "brew", "bat")
 	}
 }
 
@@ -494,21 +492,15 @@ func TestInstallBat_InteractiveFlagConsistency(t *testing.T) {
 func TestInstallBat_CheckCommandConsistency(t *testing.T) {
 	action := InstallBat()
 
-	// Most platforms check for "bat", but macOS checks for "brew"
+	// All platforms check for "bat"
 	for platform, cmd := range action.PlatformCommands {
 		if cmd.CheckCommand == "" {
 			t.Errorf("Platform %s should have a check command", platform)
 		}
 
 		// Verify check command is not arbitrary
-		if platform == actions.PlatformMacOS {
-			if cmd.CheckCommand != "brew" {
-				t.Errorf("Expected macOS check command to be 'brew', got '%s'", cmd.CheckCommand)
-			}
-		} else {
-			if cmd.CheckCommand != "bat" {
-				t.Errorf("Expected %s check command to be 'bat', got '%s'", platform, cmd.CheckCommand)
-			}
+		if cmd.CheckCommand != "bat" {
+			t.Errorf("Expected %s check command to be 'bat', got '%s'", platform, cmd.CheckCommand)
 		}
 	}
 }

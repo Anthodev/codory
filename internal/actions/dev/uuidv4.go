@@ -3,7 +3,6 @@ package dev
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"anthodev/codory/internal/actions"
 
@@ -25,7 +24,7 @@ func generateUUIDv4(ctx context.Context) (string, error) {
 	id := uuid.New()
 
 	if err := clipboard.WriteAll(id.String()); err != nil {
-		log.Fatal(err)
+		return "", fmt.Errorf("copy UUIDv4 to clipboard: %w", err)
 	}
 
 	return fmt.Sprintf("Generated UUID: %s, copied to clipboard!", id.String()), nil

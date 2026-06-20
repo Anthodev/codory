@@ -29,7 +29,7 @@ func InstallBat() *actions.Action {
 			actions.PlatformMacOS: {
 				Command:       "brew install bat",
 				PackageSource: actions.PackageSourceBrew,
-				CheckCommand:  "brew",
+				CheckCommand:  "bat",
 			},
 		},
 	}

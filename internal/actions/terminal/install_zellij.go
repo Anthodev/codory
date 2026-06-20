@@ -16,7 +16,7 @@ func InstallZellij() *actions.Action {
 				Interactive:   true,
 			},
 			actions.PlatformLinux: {
-				Command:       "brew installl zellij",
+				Command:       "brew install zellij",
 				PackageSource: actions.PackageSourceBrew,
 				CheckCommand:  "zellij",
 			},
