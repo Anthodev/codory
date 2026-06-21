@@ -9,6 +9,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
 type state int
@@ -401,105 +402,159 @@ func (m Model) View() string {
 		content = ""
 	}
 
-	return appStyle.
-		Width(m.width - 3).
-		Height(m.height - 3).
+	rendered := appStyle.
+		Width(safeSize(m.width-2, 90)).
 		Render(content)
+
+	return capRenderedHeight(rendered, m.height)
 }
 
 func (m Model) viewMenu() string {
-	var s strings.Builder
-
 	platformInfo := m.executor.GetPlatformInfo()
 	platformOS := actions.Platform(platformInfo.OS)
 
-	// Titre
-	s.WriteString(titleStyle.Render("🛠️  Codory"))
-	s.WriteString(" ")
-	s.WriteString(platformStyle.Render(fmt.Sprintf("(%s)", platformInfo.OS.DisplayName())))
-	s.WriteString("\n\n")
-
-	// Breadcrumb
-	if len(m.categoryStack) > 0 {
-		breadcrumb := make([]string, 0, len(m.categoryStack)+1)
-		for _, cat := range m.categoryStack {
-			breadcrumb = append(breadcrumb, cat.Name)
-		}
-		breadcrumb = append(breadcrumb, m.currentCategory.Name)
-		s.WriteString(breadcrumbStyle.Render(strings.Join(breadcrumb, " > ")))
-		s.WriteString("\n\n")
-	}
-
 	visibleSubCats := m.currentCategory.GetVisibleSubCategories(platformOS)
 	visibleActions := m.currentCategory.GetVisibleActions(platformOS)
+	contentWidth := safeSize(m.width-22, 90)
+	paneHeight := terminalPaneHeight(m.height, 18)
+	navWidth := clampInt(contentWidth/4, 22, 30)
+	detailWidth := clampInt(contentWidth/3, 28, 42)
+	listWidth := contentWidth - navWidth - detailWidth - 4
+	if listWidth < 28 {
+		listWidth = 28
+		detailWidth = maxInt(24, contentWidth-navWidth-listWidth-4)
+	}
 
-	// Subcategories
+	header := lipgloss.JoinHorizontal(
+		lipgloss.Top,
+		titleStyle.Render("🛠️  Codory"),
+		" ",
+		platformStyle.Render(fmt.Sprintf("%s", platformInfo.OS.DisplayName())),
+	)
+
+	panes := lipgloss.JoinHorizontal(
+		lipgloss.Top,
+		m.viewNavigationPane(navWidth, paneHeight),
+		"  ",
+		m.viewActionListPane(listWidth, paneHeight, visibleSubCats, visibleActions),
+		"  ",
+		m.viewDetailPane(detailWidth, paneHeight, visibleSubCats, visibleActions),
+	)
+
+	footer := helpStyle.Render("↑/↓ or j/k navigate • enter/→ select • esc/← back • q quit")
+	return lipgloss.JoinVertical(lipgloss.Left, header, "", panes, "", footer)
+}
+
+func (m Model) viewNavigationPane(width, height int) string {
+	var s strings.Builder
+
+	s.WriteString(titleStyle.Render("Path"))
+	s.WriteString("\n")
+
+	if len(m.categoryStack) == 0 {
+		s.WriteString(selectedStyle.Render("❯ " + m.currentCategory.Name))
+	} else {
+		for _, cat := range m.categoryStack {
+			s.WriteString(breadcrumbStyle.Render("  " + cat.Name))
+			s.WriteString("\n")
+		}
+		s.WriteString(selectedStyle.Render("❯ " + m.currentCategory.Name))
+	}
+
+	return panelStyle.Width(width).Render(capLines(s.String(), paneContentLines(height)))
+}
+
+func (m Model) viewActionListPane(width, height int, visibleSubCats []*actions.Category, visibleActions []*actions.Action) string {
+	var s strings.Builder
+
+	s.WriteString(titleStyle.Render("Actions"))
+	s.WriteString("\n")
+	s.WriteString(subtitleStyle.Render(m.currentCategory.Description))
+	s.WriteString("\n\n")
+
 	for i, cat := range visibleSubCats {
-		cursor := " "
 		if m.cursor == i {
-			cursor = ">"
-			s.WriteString(selectedStyle.Render(fmt.Sprintf("%s 📁 %s", cursor, cat.Name)))
+			s.WriteString(selectedStyle.Render(fmt.Sprintf("❯ 📁 %s", cat.Name)))
 		} else {
-			s.WriteString(categoryStyle.Render(fmt.Sprintf("%s 📁 %s", cursor, cat.Name)))
+			s.WriteString(categoryStyle.Render(fmt.Sprintf("  📁 %s", cat.Name)))
 		}
 		s.WriteString("\n")
 	}
 
-	// Actions
 	offset := len(visibleSubCats)
 	for i, action := range visibleActions {
-		cursor := " "
 		idx := offset + i
-
-		// Vérifier si l'action nécessite un package manager
-		actionText := fmt.Sprintf("%s ▶️  %s", cursor, action.Name)
-
 		if m.cursor == idx {
-			cursor = ">"
-			s.WriteString(selectedStyle.Render(actionText))
+			s.WriteString(selectedStyle.Render(fmt.Sprintf("❯ ▶ %s", action.Name)))
 		} else {
-			s.WriteString(actionStyle.Render(actionText))
+			s.WriteString(actionStyle.Render(fmt.Sprintf("  ▶ %s", action.Name)))
 		}
 		s.WriteString("\n")
 	}
 
-	// Message if no actions available
 	if len(visibleSubCats) == 0 && len(visibleActions) == 0 {
 		s.WriteString(warningStyle.Render("No actions available for this platform"))
-		s.WriteString("\n")
 	}
 
-	// Help
-	s.WriteString("\n")
-	s.WriteString(helpStyle.Render("↑/↓: navigate • →/enter: select • ←/esc: back • q: quit"))
+	return activePanelStyle.Width(width).Render(capLines(s.String(), paneContentLines(height)))
+}
 
-	return s.String()
+func (m Model) viewDetailPane(width, height int, visibleSubCats []*actions.Category, visibleActions []*actions.Action) string {
+	var s strings.Builder
+
+	s.WriteString(titleStyle.Render("Details"))
+	s.WriteString("\n\n")
+
+	if cat := selectedCategory(m.cursor, visibleSubCats); cat != nil {
+		s.WriteString(categoryStyle.Render("Category"))
+		s.WriteString("\n")
+		s.WriteString(cat.Name)
+		s.WriteString("\n\n")
+		s.WriteString(subtitleStyle.Render(emptyFallback(cat.Description, "Open category")))
+	} else if action := selectedAction(m.cursor, visibleSubCats, visibleActions); action != nil {
+		s.WriteString(subtitleStyle.Render(emptyFallback(action.Description, "No description")))
+		if cmd, ok := action.ResolvePlatformCommand(actions.Platform(m.executor.GetPlatformInfo().OS)); ok && cmd.PackageSource != "" {
+			s.WriteString("\n\n")
+			s.WriteString(promptStyle.Render(fmt.Sprintf("Source: %s", cmd.PackageSource)))
+		}
+		if len(action.Arguments) > 0 {
+			s.WriteString("\n")
+			s.WriteString(promptStyle.Render(fmt.Sprintf("Inputs: %d", len(action.Arguments))))
+		}
+	} else {
+		s.WriteString(warningStyle.Render("Nothing selected"))
+	}
+
+	return panelStyle.Width(width).Render(capLines(s.String(), paneContentLines(height)))
 }
 
 func (m Model) viewInput() string {
 	var s strings.Builder
 
-	s.WriteString("\n")
 	s.WriteString(titleStyle.Render(m.executingAction.Name))
 	s.WriteString("\n\n")
 
 	arg := m.executingAction.Arguments[m.currentInput]
-	s.WriteString(fmt.Sprintf("Enter %s:\n", arg.Name))
-	s.WriteString(fmt.Sprintf("%s\n\n", arg.Description))
+	s.WriteString(promptStyle.Render(fmt.Sprintf("Enter %s", arg.Name)))
+	s.WriteString("\n")
+	s.WriteString(subtitleStyle.Render(arg.Description))
+	s.WriteString("\n\n")
 
-	s.WriteString(inputStyle.Render(m.textInput.View()))
+	s.WriteString(inputStyle.Width(safeSize(m.width-12, 50)).Render(m.textInput.View()))
 	s.WriteString("\n\n")
 
 	s.WriteString(helpStyle.Render("enter: confirm • esc: cancel"))
 
-	return s.String()
+	return centeredPanel(s.String(), m.width, m.height)
 }
 
 func (m Model) viewExecuting() string {
+	message := "Executing..."
 	if m.executingAction == nil {
-		return "\n  Executing...\n\n"
+		return centeredPanel(promptStyle.Render(message), m.width, m.height)
 	}
-	return fmt.Sprintf("\n  Executing: %s...\n\n", m.executingAction.Name)
+	message = fmt.Sprintf("Executing: %s...", m.executingAction.Name)
+	return centeredPanel(promptStyle.Render(message), m.width, m.height)
 }
 
 func (m Model) viewPackageManagerPrompt() string {
@@ -510,14 +565,15 @@ func (m Model) viewPackageManagerPrompt() string {
 		actionName = m.pendingAction.Name
 	}
 
-	s.WriteString("\n")
 	s.WriteString(titleStyle.Render("Package manager required"))
 	s.WriteString("\n\n")
-	s.WriteString(fmt.Sprintf("%s requires %s. Install it now?", actionName, packageManagerName(m.packageManagerType)))
+	s.WriteString(subtitleStyle.Render(fmt.Sprintf("%s requires %s.", actionName, packageManagerName(m.packageManagerType))))
+	s.WriteString("\n")
+	s.WriteString(promptStyle.Render("Install it now?"))
 	s.WriteString("\n\n")
 	s.WriteString(helpStyle.Render("y/enter: install • n/esc: cancel • q: quit"))
 
-	return s.String()
+	return centeredPanel(s.String(), m.width, m.height)
 }
 
 func packageManagerName(source actions.PackageSource) string {
@@ -536,7 +592,6 @@ func packageManagerName(source actions.PackageSource) string {
 func (m Model) viewResult() string {
 	var s strings.Builder
 
-	s.WriteString("\n")
 	if m.err != nil {
 		s.WriteString(errorStyle.Render(fmt.Sprintf("❌ Error: %v", m.err)))
 		s.WriteString("\n\n")
@@ -555,5 +610,84 @@ func (m Model) viewResult() string {
 	s.WriteString("\n")
 	s.WriteString(helpStyle.Render("Press enter to continue or q/ctrl+c to quit..."))
 
-	return s.String()
+	return centeredPanel(s.String(), m.width, m.height)
+}
+
+func centeredPanel(content string, width, height int) string {
+	panelWidth := safeSize(width-12, 60)
+	paneHeight := terminalPaneHeight(height, 18)
+	return activePanelStyle.Width(panelWidth).Render(capLines(content, paneContentLines(paneHeight)))
+}
+
+func terminalPaneHeight(terminalHeight, fallback int) int {
+	if terminalHeight <= 0 {
+		return fallback
+	}
+	return maxInt(1, terminalHeight-6)
+}
+
+func capRenderedHeight(content string, maxHeight int) string {
+	if maxHeight <= 0 || lipgloss.Height(content) <= maxHeight {
+		return content
+	}
+	return capLines(content, maxHeight)
+}
+
+func paneContentLines(height int) int {
+	return maxInt(1, height-4)
+}
+
+func capLines(content string, maxLines int) string {
+	lines := strings.Split(strings.TrimRight(content, "\n"), "\n")
+	if len(lines) <= maxLines {
+		return content
+	}
+	return strings.Join(lines[:maxLines], "\n")
+}
+
+func selectedCategory(cursor int, cats []*actions.Category) *actions.Category {
+	if cursor < 0 || cursor >= len(cats) {
+		return nil
+	}
+	return cats[cursor]
+}
+
+func selectedAction(cursor int, cats []*actions.Category, actionList []*actions.Action) *actions.Action {
+	idx := cursor - len(cats)
+	if idx < 0 || idx >= len(actionList) {
+		return nil
+	}
+	return actionList[idx]
+}
+
+func emptyFallback(value, fallback string) string {
+	if strings.TrimSpace(value) == "" {
+		return fallback
+	}
+	return value
+}
+
+func safeSize(value, fallback int) int {
+	if value <= 0 {
+		return fallback
+	}
+	return value
+}
+
+func clampInt(value, minValue, maxValue int) int {
+	return minInt(maxInt(value, minValue), maxValue)
+}
+
+func minInt(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+func maxInt(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
 }
