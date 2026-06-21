@@ -23,4 +23,5 @@ func init() {
 	registry.RegisterAction("dev", InstallLazygitAction())
 	registry.RegisterAction("dev", InstallGitmojiAction())
 	registry.RegisterAction("dev", InstallJujutsuAction())
+	registry.RegisterAction("dev", InstallHunkAction())
 }
